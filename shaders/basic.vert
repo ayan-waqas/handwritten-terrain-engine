@@ -1,10 +1,12 @@
 #version 330 core
 
-// input vertex position from C++ vertex buffer (location = 0 matches our vertex attribute layout)
+// Input vertex position from C++ vertex buffer
 layout (location = 0) in vec3 aPos;
 
+// uniform 4x4 matrix passed from C++ every frame
+uniform mat4 transform;
+
 void main() {
-    // converts the 3D position into a 4D  coordinate (X, Y, Z, W)
-    // w is set to 1 for now  so that the coordinates are kept at their original scale.
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    // multiply the matrix by the 4D position to transform the vertex in 3D space
+    gl_Position = transform * vec4(aPos, 1.0);
 }
