@@ -3,40 +3,31 @@
 #include <iostream>
 
 int main() {
-    // initialzing gflw and requesting opengl context
-    glfwInit();
+    int init = glfwInit();
+    if (init == false) {
+        std::cerr << "Failed to initialize GLFW" << std::endl; //cerr used specifically for error handling
+        return -1; // same here  , 0 denotes success but we want to denote failure hence -1
+    }
+    //creating a window and specifies certain context
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Terrain", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "terrain", nullptr, nullptr);
+    glfwMakeContextCurrent(window);
     if (!window) {
-        std::cerr << "Failed to create window"<<std::endl; //cerr used to output errors specifcally
+        std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
-        return 0;
+        return -1;
     }
+
+    // so basically glfw opens a window and our window pointer is actually the one pointing to all opengl functions etc, so we pass it to the window creator function
     glfwMakeContextCurrent(window);
 
-    // loading opengl function pointers
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD"<<std::endl;
-        return 0;
-    }
-
-    glViewport(0, 0, 800, 600);
-
-    // main render loop
+    // temp loop to keep the window open so we can verify it works
     while (!glfwWindowShouldClose(window)) {
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(window); //swaps the current(on screen),  and back(off screen) buffer.
         glfwPollEvents();
     }
-
     glfwTerminate();
     return 0;
 }
