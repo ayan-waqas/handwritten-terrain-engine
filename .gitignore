@@ -69,4 +69,4 @@ Testing/
 .cache/
 
 #removing jetbrain specific stuff
-./.idea
+.idea/
