@@ -70,3 +70,4 @@ Testing/
 
 #removing jetbrain specific stuff
 .idea/
+cmake-build-*/
