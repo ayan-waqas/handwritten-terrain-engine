@@ -1,7 +1,7 @@
-#ifndef MAT4_HPP
-#define MAT4_HPP
+#ifndef MAT4_H
+#define MAT4_H
 
-#include "Vec3.hpp"
+#include "Vec3.h"
 #include <cmath>
 
 class Mat4 {
@@ -20,6 +20,7 @@ public:
     static Mat4 identity() {
         return Mat4();
     }
+
     Mat4 operator*(const Mat4& other) const {
         Mat4 result;
         for (int col = 0; col < 4; ++col) {
@@ -33,6 +34,7 @@ public:
         }
         return result;
     }
+
     static Mat4 translate(const Vec3& offset) {
         Mat4 result = identity();
         result.m[12] = offset.x;
@@ -40,6 +42,7 @@ public:
         result.m[14] = offset.z;
         return result;
     }
+
     static Mat4 scale(const Vec3& s) {
         Mat4 result;
         result.m[0] = s.x;
@@ -49,7 +52,7 @@ public:
         return result;
     }
 
-    //perspective projection , ratio = width / height (fov in degrees)
+    // perspective projection matrix (fov in degrees, aspect ratio = width/height)
     static Mat4 perspective(float fovDegrees, float aspect, float nearPlane, float farPlane) {
         Mat4 result;
         float fovRad = fovDegrees * (3.1415926535f / 180.0f);
@@ -66,9 +69,9 @@ public:
 
     // constructs camera view transform from position (eye), target (center), and up vector
     static Mat4 lookAt(const Vec3& eye, const Vec3& center, const Vec3& up) {
-        Vec3 f = (center - eye).normalize();     // Forward direction
-        Vec3 s = Vec3::cross(f, up).normalize(); // Right direction
-        Vec3 u = Vec3::cross(s, f);              // True Up direction
+        Vec3 f = (center - eye).normalize();     // forward direction
+        Vec3 s = Vec3::cross(f, up).normalize(); // right direction
+        Vec3 u = Vec3::cross(s, f);              // true up direction
 
         Mat4 result = identity();
         result.m[0] = s.x;  result.m[4] = s.y;  result.m[8]  = s.z;

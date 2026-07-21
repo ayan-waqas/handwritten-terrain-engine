@@ -20,8 +20,7 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
-add_executable(handwritten-terrain-engine src/main.cpp
-        src/main.cpp)
+add_executable(handwritten-terrain-engine src/main.cpp src/Engine.cpp)
 
 target_link_libraries(handwritten-terrain-engine PRIVATE glfw glad)
 
