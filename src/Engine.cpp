@@ -27,7 +27,7 @@ GLuint Engine::compileShader(GLenum type, const std::string& source) {
     if (!success) {
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader compile error (" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << "):\n" << infoLog << std::endl;
+        std::cerr << "Shader compile error " << infoLog << std::endl;
     }
     return shader;
 }
@@ -56,8 +56,7 @@ GLuint Engine::createShaderProgram(const char* vertPath, const char* fragPath) {
     return program;
 }
 
-Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight)
-    : window(nullptr), width(winWidth), height(winHeight), title(windowTitle), shaderProgram(0),
+Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight): window(nullptr), width(winWidth), height(winHeight), title(windowTitle), shaderProgram(0), waterShaderProgram(0),
       camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
       lastMouseX(winWidth / 2.0f), lastMouseY(winHeight / 2.0f), firstMouse(true) {
     init();
@@ -123,12 +122,16 @@ void Engine::init() {
     //  viewport for current size (might change later)//////////////////////////////////////////
     glViewport(0, 0, width, height);
 
-    // enable 3d depth testing
+    // enable 3d depth testing and alpha blending
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // compile and link our shader from files
     shaderProgram = createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
-    if (shaderProgram == false) {
+    waterShaderProgram = createShaderProgram("shaders/water.vert", "shaders/water.frag");
+
+    if (shaderProgram == false || waterShaderProgram == false) {
         std::cerr << "Failed to create shader program!" << std::endl;
         glfwTerminate();
         exit(-1);
@@ -143,6 +146,9 @@ void Engine::setupBuffers() {
 
     // terrain mesh drawing lesgoo
     heightmap.buildMesh(terrainMesh);
+
+    // setup water plane mesh
+    water.setup(200.0f);
 }
 
 void Engine::processInput() {
@@ -168,7 +174,7 @@ void Engine::run() {
 
         processInput();
 
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f); //set clear color
+        glClearColor(0.10f, 0.12f, 0.16f, 1.0f); //set clear color to dark fantasy slate fog
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen and depth buffer
 
         glUseProgram(shaderProgram);
@@ -195,7 +201,18 @@ void Engine::run() {
         GLint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
         glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
 
+        // pass camera position for distance fog calculation
+        GLint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
+        glUniform3f(viewPosLoc, camera.position.x, camera.position.y, camera.position.z);
+
         terrainMesh.draw();
+
+        // render water plane
+        glUseProgram(waterShaderProgram);
+        GLint waterTransformLoc = glGetUniformLocation(waterShaderProgram, "transform");
+        Mat4 waterMvp = projection * view * Mat4::translate(Vec3(0.0f, -10.0f, 0.0f));
+        glUniformMatrix4fv(waterTransformLoc, 1, GL_FALSE, waterMvp.m);
+        water.draw();
 
         glfwSwapBuffers(window); //swaps the on screen and off screen buffer
         glfwPollEvents();
@@ -205,7 +222,10 @@ void Engine::run() {
 void Engine::cleanup() {
     //cleaning up gpu resources
     terrainMesh.cleanup();
+    water.cleanup();
     if (shaderProgram != 0)
         glDeleteProgram(shaderProgram);
+    if (waterShaderProgram != 0)
+        glDeleteProgram(waterShaderProgram);
     glfwTerminate();
 }

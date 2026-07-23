@@ -9,6 +9,7 @@
 #include "noise/PerlinNoise.h"
 #include "terrain/Heightmap.h"
 #include "terrain/Mesh.h"
+#include "terrain/Water.h"
 #include "camera/Camera.h"
 
 class Engine {
@@ -19,10 +20,12 @@ private:
     std::string title;
 
     GLuint shaderProgram;
+    GLuint waterShaderProgram;
 
     PerlinNoise noiseGen;
     Heightmap heightmap;
     Mesh terrainMesh;
+    Water water;
     Camera camera;
 
     float deltaTime;
