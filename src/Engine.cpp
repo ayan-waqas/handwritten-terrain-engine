@@ -125,7 +125,6 @@ void Engine::init() {
 
     // enable 3d depth testing
     glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // compile and link our shader from files
     shaderProgram = createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
@@ -140,7 +139,7 @@ void Engine::init() {
 
 void Engine::setupBuffers() {
     // generate 128x128 heightmap using fbm noise
-    heightmap.generate(noiseGen, 0.05f, 4, 0.5f, 2.0f, 5.0f);
+    heightmap.generate(noiseGen, 0.05f, 4, 0.5f, 2.0f, 15.0f);
 
     // terrain mesh drawing lesgoo
     heightmap.buildMesh(terrainMesh);
@@ -182,9 +181,19 @@ void Engine::run() {
         // combine MVP = projection * view * model
         Mat4 mvp = projection * view * model;
 
-        // pass our matrix to the vertex shader uniform
+        // pass our matrix uniforms to vertex shader
         GLint transformLoc = glGetUniformLocation(shaderProgram, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, mvp.m);
+
+        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.m);
+
+        // pass directional sunlight uniforms to fragment shader
+        GLint lightDirLoc = glGetUniformLocation(shaderProgram, "lightDir");
+        glUniform3f(lightDirLoc, -0.5f, -1.0f, -0.3f);
+
+        GLint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
+        glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
 
         terrainMesh.draw();
 
