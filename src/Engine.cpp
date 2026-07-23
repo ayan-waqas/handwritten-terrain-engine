@@ -27,7 +27,7 @@ GLuint Engine::compileShader(GLenum type, const std::string& source) {
     if (!success) {
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-        std::cerr << "Shader compile error " << infoLog << std::endl;
+        std::cerr << "Shader compile error (" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << "):\n" << infoLog << std::endl;
     }
     return shader;
 }
@@ -56,7 +56,9 @@ GLuint Engine::createShaderProgram(const char* vertPath, const char* fragPath) {
     return program;
 }
 
-Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight): window(nullptr), width(winWidth), height(winHeight), title(windowTitle), shaderProgram(0), waterShaderProgram(0),
+Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight)
+    : window(nullptr), width(winWidth), height(winHeight), title(windowTitle),
+      shaderProgram(0), waterShaderProgram(0), skyboxShaderProgram(0),
       camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
       lastMouseX(winWidth / 2.0f), lastMouseY(winHeight / 2.0f), firstMouse(true) {
     init();
@@ -130,8 +132,9 @@ void Engine::init() {
     // compile and link our shader from files
     shaderProgram = createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
     waterShaderProgram = createShaderProgram("shaders/water.vert", "shaders/water.frag");
+    skyboxShaderProgram = createShaderProgram("shaders/skybox.vert", "shaders/skybox.frag");
 
-    if (shaderProgram == false || waterShaderProgram == false) {
+    if (shaderProgram == false || waterShaderProgram == false || skyboxShaderProgram == false) {
         std::cerr << "Failed to create shader program!" << std::endl;
         glfwTerminate();
         exit(-1);
@@ -149,6 +152,9 @@ void Engine::setupBuffers() {
 
     // setup water plane mesh
     water.setup(200.0f);
+
+    // setup skybox mesh
+    skybox.setup();
 }
 
 void Engine::processInput() {
@@ -177,12 +183,26 @@ void Engine::run() {
         glClearColor(0.10f, 0.12f, 0.16f, 1.0f); //set clear color to dark fantasy slate fog
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen and depth buffer
 
-        glUseProgram(shaderProgram);
-
         // calculate 3d transforms using our handwritten math library
         Mat4 model = Mat4::translate(Vec3(0.0f, -10.0f, 0.0f)); // terrain position at origin
         Mat4 view = camera.getViewMatrix(); // dynamic view matrix from free fly camera
         Mat4 projection = Mat4::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f); // 3d to 2d perspective
+
+        // 1. render skybox with sky gradient and glowing sun orb
+        glUseProgram(skyboxShaderProgram);
+        GLint skyProjLoc = glGetUniformLocation(skyboxShaderProgram, "projection");
+        glUniformMatrix4fv(skyProjLoc, 1, GL_FALSE, projection.m);
+
+        GLint skyViewLoc = glGetUniformLocation(skyboxShaderProgram, "view");
+        glUniformMatrix4fv(skyViewLoc, 1, GL_FALSE, view.m);
+
+        GLint skyLightDirLoc = glGetUniformLocation(skyboxShaderProgram, "lightDir");
+        glUniform3f(skyLightDirLoc, -0.5f, -1.0f, -0.3f);
+
+        skybox.draw();
+
+        // 2. render terrain mesh
+        glUseProgram(shaderProgram);
 
         // combine MVP = projection * view * model
         Mat4 mvp = projection * view * model;
@@ -207,7 +227,7 @@ void Engine::run() {
 
         terrainMesh.draw();
 
-        // render water plane
+        // 3. render water plane
         glUseProgram(waterShaderProgram);
         GLint waterTransformLoc = glGetUniformLocation(waterShaderProgram, "transform");
         Mat4 waterMvp = projection * view * Mat4::translate(Vec3(0.0f, -10.0f, 0.0f));
@@ -218,14 +238,16 @@ void Engine::run() {
         glfwPollEvents();
     }
 }
-
+//to clean up gpu resources
 void Engine::cleanup() {
-    //cleaning up gpu resources
     terrainMesh.cleanup();
     water.cleanup();
+    skybox.cleanup();
     if (shaderProgram != 0)
         glDeleteProgram(shaderProgram);
     if (waterShaderProgram != 0)
         glDeleteProgram(waterShaderProgram);
+    if (skyboxShaderProgram != 0)
+        glDeleteProgram(skyboxShaderProgram);
     glfwTerminate();
 }

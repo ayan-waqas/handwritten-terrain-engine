@@ -10,6 +10,7 @@
 #include "terrain/Heightmap.h"
 #include "terrain/Mesh.h"
 #include "terrain/Water.h"
+#include "terrain/Skybox.h"
 #include "camera/Camera.h"
 
 class Engine {
@@ -21,11 +22,13 @@ private:
 
     GLuint shaderProgram;
     GLuint waterShaderProgram;
+    GLuint skyboxShaderProgram;
 
     PerlinNoise noiseGen;
     Heightmap heightmap;
     Mesh terrainMesh;
     Water water;
+    Skybox skybox;
     Camera camera;
 
     float deltaTime;
