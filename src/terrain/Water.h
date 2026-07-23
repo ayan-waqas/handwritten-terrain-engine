@@ -12,10 +12,9 @@ public:
 
     Water() : vao(0), vbo(0) {}
 
-    // sets up flat water quad mesh at height y = -4.5
-    void setup(float size = 1000.0f) {
+    void setup(float size = 1500.0f) {
         float half = size / 2.0f;
-        float waterHeight = -4.5f;
+        float waterHeight = 2.0f;
 
         float vertices[] = {
             -half, waterHeight, -half,
@@ -40,7 +39,6 @@ public:
         glBindVertexArray(0);
     }
 
-    // draws water plane
     void draw() const {
         if (vao != 0) {
             glBindVertexArray(vao);
@@ -49,7 +47,6 @@ public:
         }
     }
 
-    // cleans up water gpu buffers
     void cleanup() {
         if (vao != 0)
             glDeleteVertexArrays(1, &vao);

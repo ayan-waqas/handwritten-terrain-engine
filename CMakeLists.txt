@@ -32,8 +32,10 @@ else()
     target_link_libraries(handwritten-terrain-engine PRIVATE GL)
 endif()
 
-# Automatically copy shaders folder to the output build directory
+# Automatically copy shaders and models folders to the output build directory
 add_custom_command(TARGET handwritten-terrain-engine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:handwritten-terrain-engine>/shaders
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/models $<TARGET_FILE_DIR:handwritten-terrain-engine>/models
 )

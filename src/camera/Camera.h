@@ -19,12 +19,21 @@ public:
     float speed;
     float sensitivity;
 
-    Camera(Vec3 startPos = Vec3(0.0f, 30.0f, 60.0f), Vec3 startUp = Vec3(0.0f, 1.0f, 0.0f), float startYaw = -90.0f, float startPitch = -20.0f): position(startPos), worldUp(startUp), yaw(startYaw), pitch(startPitch), speed(20.0f), sensitivity(0.1f) {
+    Camera(Vec3 startPos = Vec3(0.0f, 30.0f, 60.0f), Vec3 startUp = Vec3(0.0f, 1.0f, 0.0f), float startYaw = -90.0f, float startPitch = -20.0f)
+        : position(startPos), worldUp(startUp), yaw(startYaw), pitch(startPitch), speed(20.0f), sensitivity(0.1f) {
         updateCameraVectors();
     }
 
     Mat4 getViewMatrix() const {
         return Mat4::lookAt(position, position + front, up);
+    }
+
+    // view matrix for rendering water planar reflection pass
+    Mat4 getReflectionViewMatrix(float waterY) const {
+        Vec3 invPos = Vec3(position.x, 2.0f * waterY - position.y, position.z);
+        Vec3 invFront = Vec3(front.x, -front.y, front.z).normalize();
+        Vec3 invUp = Vec3(0.0f, 1.0f, 0.0f);
+        return Mat4::lookAt(invPos, invPos + invFront, invUp);
     }
 
     void processKeyboard(const std::string& direction, float deltaTime) {
@@ -46,7 +55,6 @@ public:
         yaw += xOffset;
         pitch += yOffset;
 
-        // constrain pitch to prevent screen flip
         if (pitch > 89.0f)
             pitch = 89.0f;
         if (pitch < -89.0f)
@@ -56,7 +64,6 @@ public:
     }
 
 private:
-    // recalculates front, right, and up vectors from updated yaw and pitch
     void updateCameraVectors() {
         float radYaw = yaw * (3.1415926535f / 180.0f);
         float radPitch = pitch * (3.1415926535f / 180.0f);
@@ -67,7 +74,6 @@ private:
         newFront.z = std::sin(radYaw) * std::cos(radPitch);
         front = newFront.normalize();
 
-        // compute right and true up vectors using cross product
         right = Vec3::cross(front, worldUp).normalize();
         up = Vec3::cross(right, front).normalize();
     }

@@ -5,10 +5,11 @@
 #include <vector>
 #include "../math/Vec3.h"
 
-// vertex struct holding position and normal
+// vertex struct holding position, normal, and biome value
 struct Vertex {
     Vec3 position;
     Vec3 normal;
+    float biome;
 };
 
 class Mesh {
@@ -45,6 +46,10 @@ public:
         // normal attribute
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
         glEnableVertexAttribArray(1);
+
+        // biome attribute
+        glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, biome));
+        glEnableVertexAttribArray(2);
 
         glBindVertexArray(0);
     }

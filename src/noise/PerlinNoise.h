@@ -99,6 +99,26 @@ public:
 
         return total / maxValue;
     }
+
+    // organic mountain terrain with domain warping and large-scale height variation
+    float terrainHeight(float wx, float wz) const {
+        float sx = wx * 0.035f;
+        float sz = wz * 0.035f;
+
+        // domain warping offsets sampling coordinates for serpentine alpine ridges
+        float warpX = fBm(sx * 0.4f, sz * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
+        float warpZ = fBm((sx + 4.2f) * 0.4f, (sz + 2.8f) * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
+
+        // 5-octave ridged mountain sampling with domain warp
+        float ridge = ridgedfBm(sx + warpX, sz + warpZ, 5, 0.48f, 2.0f);
+
+        // large-scale height variation across the world
+        float variation = fBm(sx * 0.20f, sz * 0.20f, 2, 0.5f, 2.0f);
+        variation = variation * 0.5f + 0.5f;
+
+        float heightScale = 0.5f + variation * 1.1f;
+        return (ridge * heightScale - 0.22f) * 22.0f;
+    }
 };
 
 #endif
