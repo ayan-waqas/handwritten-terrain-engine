@@ -19,38 +19,38 @@ void main() {
     vec3 lightDirection = normalize(-lightDir);
 
     // ambient lighting component
-    vec3 ambient = 0.22 * lightColor;
+    vec3 ambient = 0.20 * lightColor;
 
-    // diffuse lighting component
+    // diffuse lighting component with sunset contrast
     float diff = max(dot(norm, lightDirection), 0.0);
-    vec3 diffuse = diff * lightColor * 1.3;
+    vec3 diffuse = diff * lightColor * 1.4;
 
     // slope calculation for cliff detection
     float steepness = dot(norm, vec3(0.0, 1.0, 0.0));
 
-    // dark fantasy terrain color palette
-    vec3 grass = vec3(0.12, 0.20, 0.10); // deep olive green
-    vec3 rock  = vec3(0.35, 0.35, 0.38); // ash grey rock
-    vec3 snow  = vec3(0.95, 0.95, 1.00); // pure white snow
+    // dark fantasy desaturated color palette
+    vec3 grass = vec3(0.10, 0.15, 0.08); // dark dead olive green
+    vec3 rock  = vec3(0.28, 0.28, 0.30); // ash grey rock
+    vec3 snow  = vec3(0.80, 0.78, 0.75); // pale bone white peaks
 
-    // 1. base color starts as grass
+    // 1. base color starts as dead vegetation
     vec3 baseColor = grass;
 
-    // 2. steep slopes become rock cliffs
-    if (steepness < 0.75)
-        baseColor = mix(rock, grass, clamp(steepness / 0.75, 0.0, 1.0));
+    // 2. steep slopes become ash grey rock cliffs
+    if (steepness < 0.70)
+        baseColor = mix(rock, grass, clamp(steepness / 0.70, 0.0, 1.0));
 
-    // 3. high elevation mountain peaks get covered in snow
-    if (Height > 1.5)
-        baseColor = mix(baseColor, snow, clamp((Height - 1.5) / 3.0, 0.0, 1.0));
+    // 3. high elevation ridged peaks get pale bone white snow
+    if (Height > 3.0)
+        baseColor = mix(baseColor, snow, clamp((Height - 3.0) / 4.0, 0.0, 1.0));
 
     // combine lighting with terrain colors
     vec3 litColor = (ambient + diffuse) * baseColor;
 
-    // 4. atmospheric distance fog calculation
+    // 4. thick muted purple-grey fog calculation
     float distance = length(viewPos - FragPos);
-    float fogFactor = clamp((distance - 20.0) / 120.0, 0.0, 1.0);
-    vec3 fogColor = vec3(0.10, 0.12, 0.16); // dark fantasy slate fog
+    float fogFactor = clamp((distance - 15.0) / 90.0, 0.0, 1.0);
+    vec3 fogColor = vec3(0.08, 0.07, 0.11); // muted purple-grey fog
 
     // blend terrain into fog
     vec3 finalColor = mix(litColor, fogColor, fogFactor);

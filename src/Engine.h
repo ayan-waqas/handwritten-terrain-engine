@@ -7,8 +7,7 @@
 #include <string>
 #include "math/Mat4.h"
 #include "noise/PerlinNoise.h"
-#include "terrain/Heightmap.h"
-#include "terrain/Mesh.h"
+#include "terrain/ChunkManager.h"
 #include "terrain/Water.h"
 #include "terrain/Skybox.h"
 #include "camera/Camera.h"
@@ -25,8 +24,7 @@ private:
     GLuint skyboxShaderProgram;
 
     PerlinNoise noiseGen;
-    Heightmap heightmap;
-    Mesh terrainMesh;
+    ChunkManager chunkManager;
     Water water;
     Skybox skybox;
     Camera camera;

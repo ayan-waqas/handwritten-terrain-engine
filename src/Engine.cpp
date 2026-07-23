@@ -59,7 +59,7 @@ GLuint Engine::createShaderProgram(const char* vertPath, const char* fragPath) {
 Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight)
     : window(nullptr), width(winWidth), height(winHeight), title(windowTitle),
       shaderProgram(0), waterShaderProgram(0), skyboxShaderProgram(0),
-      camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
+      chunkManager(32, 4), camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
       lastMouseX(winWidth / 2.0f), lastMouseY(winHeight / 2.0f), firstMouse(true) {
     init();
 }
@@ -144,14 +144,11 @@ void Engine::init() {
 }
 
 void Engine::setupBuffers() {
-    // generate 128x128 heightmap using fbm noise
-    heightmap.generate(noiseGen, 0.05f, 4, 0.5f, 2.0f, 15.0f);
-
-    // terrain mesh drawing lesgoo
-    heightmap.buildMesh(terrainMesh);
+    // generate initial terrain chunks
+    chunkManager.update(camera.position, noiseGen);
 
     // setup water plane mesh
-    water.setup(200.0f);
+    water.setup(500.0f);
 
     // setup skybox mesh
     skybox.setup();
@@ -180,67 +177,60 @@ void Engine::run() {
 
         processInput();
 
-        glClearColor(0.10f, 0.12f, 0.16f, 1.0f); //set clear color to dark fantasy slate fog
+        // dynamically update and stream chunks around camera
+        chunkManager.update(camera.position, noiseGen);
+
+        glClearColor(0.08f, 0.07f, 0.11f, 1.0f); //set clear color to dark fantasy slate fog
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen and depth buffer
 
         // calculate 3d transforms using our handwritten math library
-        Mat4 model = Mat4::translate(Vec3(0.0f, -10.0f, 0.0f)); // terrain position at origin
         Mat4 view = camera.getViewMatrix(); // dynamic view matrix from free fly camera
         Mat4 projection = Mat4::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f); // 3d to 2d perspective
 
         // 1. render skybox with sky gradient and glowing sun orb
         glUseProgram(skyboxShaderProgram);
         GLint skyProjLoc = glGetUniformLocation(skyboxShaderProgram, "projection");
-        glUniformMatrix4fv(skyProjLoc, 1, GL_FALSE, projection.m);
+        glUniformMatrix4fv(skyProjLoc, 1, false, projection.m);
 
         GLint skyViewLoc = glGetUniformLocation(skyboxShaderProgram, "view");
-        glUniformMatrix4fv(skyViewLoc, 1, GL_FALSE, view.m);
+        glUniformMatrix4fv(skyViewLoc, 1, false, view.m);
 
         GLint skyLightDirLoc = glGetUniformLocation(skyboxShaderProgram, "lightDir");
-        glUniform3f(skyLightDirLoc, -0.5f, -1.0f, -0.3f);
+        glUniform3f(skyLightDirLoc, -0.8f, -0.3f, -0.5f);
 
         skybox.draw();
 
-        // 2. render terrain mesh
+        // 2. render all active terrain chunks
         glUseProgram(shaderProgram);
-
-        // combine MVP = projection * view * model
-        Mat4 mvp = projection * view * model;
-
-        // pass our matrix uniforms to vertex shader
-        GLint transformLoc = glGetUniformLocation(shaderProgram, "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, mvp.m);
-
-        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model.m);
 
         // pass directional sunlight uniforms to fragment shader
         GLint lightDirLoc = glGetUniformLocation(shaderProgram, "lightDir");
-        glUniform3f(lightDirLoc, -0.5f, -1.0f, -0.3f);
+        glUniform3f(lightDirLoc, -0.8f, -0.3f, -0.5f);
 
         GLint lightColorLoc = glGetUniformLocation(shaderProgram, "lightColor");
-        glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
+        glUniform3f(lightColorLoc, 0.85f, 0.85f, 0.95f);
 
         // pass camera position for distance fog calculation
         GLint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
         glUniform3f(viewPosLoc, camera.position.x, camera.position.y, camera.position.z);
 
-        terrainMesh.draw();
+        chunkManager.draw(shaderProgram, projection, view);
 
         // 3. render water plane
         glUseProgram(waterShaderProgram);
         GLint waterTransformLoc = glGetUniformLocation(waterShaderProgram, "transform");
-        Mat4 waterMvp = projection * view * Mat4::translate(Vec3(0.0f, -10.0f, 0.0f));
-        glUniformMatrix4fv(waterTransformLoc, 1, GL_FALSE, waterMvp.m);
+        Mat4 waterMvp = projection * view * Mat4::translate(Vec3(camera.position.x, -10.0f, camera.position.z));
+        glUniformMatrix4fv(waterTransformLoc, 1, false, waterMvp.m);
         water.draw();
 
         glfwSwapBuffers(window); //swaps the on screen and off screen buffer
         glfwPollEvents();
     }
 }
-//to clean up gpu resources
+
 void Engine::cleanup() {
-    terrainMesh.cleanup();
+    //cleaning up gpu resources
+    chunkManager.cleanup();
     water.cleanup();
     skybox.cleanup();
     if (shaderProgram != 0)

@@ -8,20 +8,20 @@ uniform vec3 lightDir;
 void main() {
     vec3 dir = normalize(TexCoords);
 
-    // vertical gradient from horizon to sky top
+    // vertical gradient from horizon to sky top (dark fantasy twilight)
     float height = dir.y;
-    vec3 horizonColor = vec3(0.10, 0.12, 0.16);
-    vec3 skyTopColor  = vec3(0.04, 0.06, 0.12);
+    vec3 horizonColor = vec3(0.08, 0.07, 0.11);
+    vec3 skyTopColor  = vec3(0.03, 0.04, 0.08);
 
     vec3 skyColor = mix(horizonColor, skyTopColor, clamp(height * 2.0, 0.0, 1.0));
 
-    // glowing sun orb in direction of lightDir
+    // glowing low sunset sun orb in direction of lightDir
     vec3 sunDir = normalize(-lightDir);
     float sunDot = max(dot(dir, sunDir), 0.0);
     float sunDisk = pow(sunDot, 256.0);
     float sunGlow = pow(sunDot, 16.0) * 0.4;
 
-    vec3 sunColor = vec3(1.0, 0.9, 0.7) * (sunDisk * 2.0 + sunGlow);
+    vec3 sunColor = vec3(0.95, 0.80, 0.65) * (sunDisk * 2.0 + sunGlow);
 
     FragColor = vec4(skyColor + sunColor, 1.0);
 }

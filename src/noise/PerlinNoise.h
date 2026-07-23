@@ -78,6 +78,27 @@ public:
 
         return total / maxValue;
     }
+
+    // ridged fbm noise for sharp jagged mountain ridgelines
+    float ridgedfBm(float x, float y, int octaves, float persistence, float lacunarity) const {
+        float total = 0.0f;
+        float frequency = 1.0f;
+        float amplitude = 1.0f;
+        float maxValue = 0.0f;
+
+        for (int i = 0; i < octaves; ++i) {
+            float n = noise(x * frequency, y * frequency);
+            n = 1.0f - std::abs(n);
+            n = n * n;
+
+            total += n * amplitude;
+            maxValue += amplitude;
+            amplitude *= persistence;
+            frequency *= lacunarity;
+        }
+
+        return total / maxValue;
+    }
 };
 
 #endif
