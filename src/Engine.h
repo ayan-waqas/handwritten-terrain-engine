@@ -39,7 +39,7 @@ private:
     GLuint reflectionFramebuffer;
     GLuint reflectionColorTexture;
     GLuint reflectionDepthBuffer;
-
+    
     PerlinNoise noiseGen;
     ChunkManager chunkManager;
     Water water;
