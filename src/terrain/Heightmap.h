@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../noise/PerlinNoise.h"
+#include "Mesh.h"
 
 class Heightmap {
 public:
@@ -29,10 +30,54 @@ public:
 
     // helper to get height at grid coordinate (x, z)
     float getHeight(int x, int z) const {
-        if (x >= 0 && x < width && z >= 0 && z < depth) {
+        if (x >= 0 && x < width && z >= 0 && z < depth)
             return heights[z * width + x];
-        }
         return 0.0f;
+    }
+
+    // builds mesh vertices and indices from heightmap grid
+    void buildMesh(Mesh& mesh) const {
+        std::vector<Vertex> vertices;
+        std::vector<unsigned int> indices;
+
+        // generate vertices and normals
+        for (int z = 0; z < depth; ++z) {
+            for (int x = 0; x < width; ++x) {
+                Vertex v;
+                v.position = Vec3((float)x - width / 2.0f, getHeight(x, z), (float)z - depth / 2.0f);
+
+                // compute surface normal from neighbor heights
+                float hL = getHeight(x - 1, z);
+                float hR = getHeight(x + 1, z);
+                float hD = getHeight(x, z - 1);
+                float hU = getHeight(x, z + 1);
+                v.normal = Vec3(hL - hR, 2.0f, hD - hU).normalize();
+
+                vertices.push_back(v);
+            }
+        }
+
+        // generate triangle indices for grid quads
+        for (int z = 0; z < depth - 1; ++z) {
+            for (int x = 0; x < width - 1; ++x) {
+                unsigned int i0 = z * width + x;
+                unsigned int i1 = z * width + (x + 1);
+                unsigned int i2 = (z + 1) * width + x;
+                unsigned int i3 = (z + 1) * width + (x + 1);
+
+                // triangle 1
+                indices.push_back(i0);
+                indices.push_back(i2);
+                indices.push_back(i1);
+
+                // triangle 2
+                indices.push_back(i1);
+                indices.push_back(i2);
+                indices.push_back(i3);
+            }
+        }
+
+        mesh.setup(vertices, indices);
     }
 };
 

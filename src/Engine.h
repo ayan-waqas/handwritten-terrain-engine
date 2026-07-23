@@ -8,6 +8,8 @@
 #include "math/Mat4.h"
 #include "noise/PerlinNoise.h"
 #include "terrain/Heightmap.h"
+#include "terrain/Mesh.h"
+#include "camera/Camera.h"
 
 class Engine {
 private:
@@ -15,11 +17,20 @@ private:
     unsigned int width;
     unsigned int height;
     std::string title;
+
     GLuint shaderProgram;
-    GLuint vao;
-    GLuint vbo;
+
     PerlinNoise noiseGen;
     Heightmap heightmap;
+    Mesh terrainMesh;
+    Camera camera;
+
+    float deltaTime;
+    float lastFrame;
+
+    float lastMouseX;
+    float lastMouseY;
+    bool firstMouse;
 
     // helper functions for shader loading and compilation
     std::string loadShaderSource(const char* filePath);
@@ -28,7 +39,10 @@ private:
 
     void init();
     void setupBuffers();
+    void processInput();
     void cleanup();
+
+    static void mouseCallback(GLFWwindow* win, double xpos, double ypos);
 
 public:
     Engine(const std::string& windowTitle = "terrain", unsigned int winWidth = 800, unsigned int winHeight = 600);

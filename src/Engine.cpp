@@ -57,12 +57,37 @@ GLuint Engine::createShaderProgram(const char* vertPath, const char* fragPath) {
 }
 
 Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight)
-    : window(nullptr), width(winWidth), height(winHeight), title(windowTitle), shaderProgram(0), vao(0), vbo(0) {
+    : window(nullptr), width(winWidth), height(winHeight), title(windowTitle), shaderProgram(0),
+      camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
+      lastMouseX(winWidth / 2.0f), lastMouseY(winHeight / 2.0f), firstMouse(true) {
     init();
 }
 
 Engine::~Engine() {
     cleanup();
+}
+
+void Engine::mouseCallback(GLFWwindow* win, double xpos, double ypos) {
+    Engine* engine = static_cast<Engine*>(glfwGetWindowUserPointer(win));
+    if (engine == nullptr)
+        return;
+
+    float xPosF = (float)xpos;
+    float yPosF = (float)ypos;
+
+    if (engine->firstMouse) {
+        engine->lastMouseX = xPosF;
+        engine->lastMouseY = yPosF;
+        engine->firstMouse = false;
+    }
+
+    float xOffset = xPosF - engine->lastMouseX;
+    float yOffset = engine->lastMouseY - yPosF;
+
+    engine->lastMouseX = xPosF;
+    engine->lastMouseY = yPosF;
+
+    engine->camera.processMouseMovement(xOffset, yOffset);
 }
 
 void Engine::init() {
@@ -84,6 +109,11 @@ void Engine::init() {
     // so basically glfw opens a window and our window pointer is actually the one pointing to all opengl functions in the gpu etc, so we pass it to the window creator function
     glfwMakeContextCurrent(window);
 
+    // capture mouse cursor inside window for fps camera controls
+    glfwSetWindowUserPointer(window, this);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouseCallback);
+
     if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == false) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
         glfwTerminate();
@@ -92,6 +122,10 @@ void Engine::init() {
 
     //  viewport for current size (might change later)//////////////////////////////////////////
     glViewport(0, 0, width, height);
+
+    // enable 3d depth testing
+    glEnable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // compile and link our shader from files
     shaderProgram = createShaderProgram("shaders/basic.vert", "shaders/basic.frag");
@@ -102,42 +136,48 @@ void Engine::init() {
     }
 
     setupBuffers();
-
-    // generate 128x128 heightmap using fbm noise
-    heightmap.generate(noiseGen, 0.05f, 4, 0.5f, 2.0f, 3.0f);
 }
 
 void Engine::setupBuffers() {
-    //triangle drawing lesgoo
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // bottom-left corner
-         0.5f, -0.5f, 0.0f, // bottom-right corner
-         0.0f,  0.5f, 0.0f  // top-center
-    };
+    // generate 128x128 heightmap using fbm noise
+    heightmap.generate(noiseGen, 0.05f, 4, 0.5f, 2.0f, 5.0f);
 
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    // terrain mesh drawing lesgoo
+    heightmap.buildMesh(terrainMesh);
+}
+
+void Engine::processInput() {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.processKeyboard("FORWARD", deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.processKeyboard("BACKWARD", deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.processKeyboard("LEFT", deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.processKeyboard("RIGHT", deltaTime);
 }
 
 void Engine::run() {
     // temp loop to keep the window open so we can verify it works
     while (!glfwWindowShouldClose(window)) {
+        float currentFrame = (float)glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        processInput();
+
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f); //set clear color
-        glClear(GL_COLOR_BUFFER_BIT); // clear screen
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear screen and depth buffer
 
         glUseProgram(shaderProgram);
 
         // calculate 3d transforms using our handwritten math library
-        Mat4 model = Mat4::translate(Vec3(0.0f, 0.0f, -2.0f)); // push triangle back into screen
-        Mat4 view = Mat4::lookAt(Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 0.0f, -1.0f), Vec3(0.0f, 1.0f, 0.0f)); // camera at origin looking forward
-        Mat4 projection = Mat4::perspective(45.0f, (float)width / (float)height, 0.1f, 100.0f); // 3d to 2d perspective
+        Mat4 model = Mat4::translate(Vec3(0.0f, -10.0f, 0.0f)); // terrain position at origin
+        Mat4 view = camera.getViewMatrix(); // dynamic view matrix from free fly camera
+        Mat4 projection = Mat4::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f); // 3d to 2d perspective
 
         // combine MVP = projection * view * model
         Mat4 mvp = projection * view * model;
@@ -146,8 +186,7 @@ void Engine::run() {
         GLint transformLoc = glGetUniformLocation(shaderProgram, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, mvp.m);
 
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        terrainMesh.draw();
 
         glfwSwapBuffers(window); //swaps the on screen and off screen buffer
         glfwPollEvents();
@@ -156,10 +195,7 @@ void Engine::run() {
 
 void Engine::cleanup() {
     //cleaning up gpu resources
-    if (vao != 0)
-        glDeleteVertexArrays(1, &vao);
-    if (vbo != 0)
-        glDeleteBuffers(1, &vbo);
+    terrainMesh.cleanup();
     if (shaderProgram != 0)
         glDeleteProgram(shaderProgram);
     glfwTerminate();
