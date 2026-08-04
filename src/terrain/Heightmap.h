@@ -16,10 +16,14 @@ public:
     Heightmap(int w = 33, int d = 33) : width(w), depth(d), heights(w * d, 0.0f) {}
 
     float getHeight(int x, int z) const {
-        if (x < 0) x = 0;
-        if (x >= width) x = width - 1;
-        if (z < 0) z = 0;
-        if (z >= depth) z = depth - 1;
+        if (x < 0)
+            x = 0;
+        if (x >= width)
+            x = width - 1;
+        if (z < 0)
+            z = 0;
+        if (z >= depth)
+            z = depth - 1;
         return heights[z * width + x];
     }
 
@@ -29,8 +33,8 @@ public:
     }
 
     // Thermal & Hydraulic erosion pass to carve natural river channels and scree slopes
-    void applyErosion(int iterations = 8) {
-        float talusThreshold = 0.45f;
+    void applyErosion(int iterations = 2) {
+        float talusThreshold = 0.80f;
 
         for (int iter = 0; iter < iterations; ++iter) {
             for (int z = 1; z < depth - 1; ++z) {
@@ -57,17 +61,22 @@ public:
 
                     float diff = h - minH;
                     if (diff > talusThreshold) {
-                        // Thermal collapse on steep cliffs
-                        float delta = (diff - talusThreshold) * 0.45f;
+                        float delta = (diff - talusThreshold) * 0.25f;
                         heights[idx] -= delta;
                         heights[lowestIdx] += delta;
                     }
-                    else if (diff > 0.03f) {
-                        // Hydraulic stream carving down valleys
-                        float carve = diff * 0.18f;
-                        heights[idx] -= carve;
-                        heights[lowestIdx] += carve * 0.5f;
-                    }
+                }
+            }
+        }
+    }
+
+    void fixBorderHeights(float worldOffsetX, float worldOffsetZ, const PerlinNoise& noiseGen) {
+        for (int z = 0; z < depth; ++z) {
+            for (int x = 0; x < width; ++x) {
+                if (x == 0 || x == width - 1 || z == 0 || z == depth - 1) {
+                    float wx = worldOffsetX + (float)x;
+                    float wz = worldOffsetZ + (float)z;
+                    heights[z * width + x] = noiseGen.terrainHeight(wx, wz);
                 }
             }
         }
@@ -87,11 +96,20 @@ public:
                 float wz = worldOffsetZ + (float)z;
 
                 // Compute normals directly from eroded heightmap grid so lighting catches every carved gully
-                float hL = getHeight(x - 1, z);
-                float hR = getHeight(x + 1, z);
-                float hD = getHeight(x, z - 1);
-                float hU = getHeight(x, z + 1);
-                v.normal = Vec3(hL - hR, 2.0f, hD - hU).normalize();
+                if (x == 0 || x == width - 1 || z == 0 || z == depth - 1) {
+                    float hL = noiseGen.terrainHeight(wx - 1.0f, wz);
+                    float hR = noiseGen.terrainHeight(wx + 1.0f, wz);
+                    float hD = noiseGen.terrainHeight(wx, wz - 1.0f);
+                    float hU = noiseGen.terrainHeight(wx, wz + 1.0f);
+                    v.normal = Vec3(hL - hR, 2.0f, hD - hU).normalize();
+                }
+                else {
+                    float hL = getHeight(x - 1, z);
+                    float hR = getHeight(x + 1, z);
+                    float hD = getHeight(x, z - 1);
+                    float hU = getHeight(x, z + 1);
+                    v.normal = Vec3(hL - hR, 2.0f, hD - hU).normalize();
+                }
 
                 // Biome noise scale set to 0.022 so Forest, Desert, and Tundra biomes are visible nearby
                 float biomeRaw = noiseGen.fBm(wx * 0.022f, wz * 0.022f, 3, 0.5f, 2.0f);

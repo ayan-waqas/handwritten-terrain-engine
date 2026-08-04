@@ -60,16 +60,23 @@ public:
                             float heightVal = noiseGen.terrainHeight(wx, wz);
                             newChunk.heightmap.heights[z * newChunk.heightmap.width + x] = heightVal;
 
-                            // trees in valleys (sparse)
-                            if (x % 9 == 0 && z % 9 == 0 && heightVal > 3.0f && heightVal < 6.0f)
-                                newChunk.treePositions.push_back(Vec3(wx, heightVal, wz));
+                            // Trees: Lighter, natural forest groves
+                            float forestNoise = noiseGen.fBm(wx * 0.05f, wz * 0.05f, 2, 0.5f, 2.0f);
+                            if (forestNoise > 0.32f && heightVal > 1.0f && heightVal < 9.0f) {
+                                int hash = (int)(wx * 41.0f + wz * 83.0f);
+                                if (hash % 7 == 0) {
+                                    float jx = (float)((hash % 7) - 3) * 0.18f;
+                                    float jz = (float)((hash % 11) - 5) * 0.18f;
+                                    newChunk.treePositions.push_back(Vec3(wx + jx, heightVal, wz + jz));
+                                }
+                            }
 
-                            // rocks on mountain slopes
-                            if (x % 10 == 3 && z % 10 == 3 && heightVal > 6.0f && heightVal < 12.0f)
+                            // Rocks: Spawn on higher dry slopes
+                            if (x % 12 == 7 && z % 12 == 2 && heightVal > 5.0f && heightVal < 16.0f)
                                 newChunk.rockPositions.push_back(Vec3(wx, heightVal, wz));
 
-                            // continuous dense grass carpet joined together seamlessly across green valley meadows
-                            if (heightVal > 1.2f && heightVal < 7.0f) {
+                            // Grass: Spawn ONLY on dry meadow land (above water level -1.0f)
+                            if (heightVal > -1.0f && heightVal < 9.0f) {
                                 for (int subZ = 0; subZ < 2; ++subZ) {
                                     for (int subX = 0; subX < 2; ++subX) {
                                         float px = wx + (float)subX * 0.5f - 0.25f;
@@ -88,7 +95,8 @@ public:
                         }
                     }
 
-                    newChunk.heightmap.applyErosion(8);
+                    newChunk.heightmap.applyErosion(2);
+                    newChunk.heightmap.fixBorderHeights(worldOffsetX, worldOffsetZ, noiseGen);
                     newChunk.heightmap.buildMeshSeamless(newChunk.mesh, worldOffsetX, worldOffsetZ, noiseGen);
                     activeChunks.push_back(newChunk);
                 }
@@ -129,7 +137,7 @@ public:
         }
     }
 
-    void drawTrees(GLuint treeShader, const Mat4& projection, const Mat4& view, float time, const Tree& treeMesh, const Vec3& camPos) {
+    void drawTrees(GLuint treeShader, const Mat4& projection, const Mat4& view, float time, const Tree& treeMesh, const Vec3& camPos, const Vec3& lightDir, const Vec3& lightColor, float timeOfDay) {
         glUseProgram(treeShader);
         GLint transformLoc = glGetUniformLocation(treeShader, "transform");
         GLint modelLoc = glGetUniformLocation(treeShader, "model");
@@ -137,10 +145,12 @@ public:
         GLint lightDirLoc = glGetUniformLocation(treeShader, "lightDir");
         GLint lightColorLoc = glGetUniformLocation(treeShader, "lightColor");
         GLint viewPosLoc = glGetUniformLocation(treeShader, "viewPos");
+        GLint timeOfDayLoc = glGetUniformLocation(treeShader, "timeOfDay");
 
         glUniform1f(timeLoc, time);
-        glUniform3f(lightDirLoc, -0.5f, -0.8f, -0.3f);
-        glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
+        glUniform1f(timeOfDayLoc, timeOfDay);
+        glUniform3f(lightDirLoc, lightDir.x, lightDir.y, lightDir.z);
+        glUniform3f(lightColorLoc, lightColor.x, lightColor.y, lightColor.z);
         glUniform3f(viewPosLoc, camPos.x, camPos.y, camPos.z);
 
         for (int i = 0; i < (int)activeChunks.size(); ++i) {
@@ -162,7 +172,7 @@ public:
         }
     }
 
-    void drawRocks(GLuint treeShader, const Mat4& projection, const Mat4& view, float time, const Rock& rockMesh, const Vec3& camPos) {
+    void drawRocks(GLuint treeShader, const Mat4& projection, const Mat4& view, float time, const Rock& rockMesh, const Vec3& camPos, const Vec3& lightDir, const Vec3& lightColor, float timeOfDay) {
         glUseProgram(treeShader);
         GLint transformLoc = glGetUniformLocation(treeShader, "transform");
         GLint modelLoc = glGetUniformLocation(treeShader, "model");
@@ -170,10 +180,12 @@ public:
         GLint lightDirLoc = glGetUniformLocation(treeShader, "lightDir");
         GLint lightColorLoc = glGetUniformLocation(treeShader, "lightColor");
         GLint viewPosLoc = glGetUniformLocation(treeShader, "viewPos");
+        GLint timeOfDayLoc = glGetUniformLocation(treeShader, "timeOfDay");
 
         glUniform1f(timeLoc, time);
-        glUniform3f(lightDirLoc, -0.5f, -0.8f, -0.3f);
-        glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
+        glUniform1f(timeOfDayLoc, timeOfDay);
+        glUniform3f(lightDirLoc, lightDir.x, lightDir.y, lightDir.z);
+        glUniform3f(lightColorLoc, lightColor.x, lightColor.y, lightColor.z);
         glUniform3f(viewPosLoc, camPos.x, camPos.y, camPos.z);
 
         for (int i = 0; i < (int)activeChunks.size(); ++i) {
@@ -195,7 +207,7 @@ public:
         }
     }
 
-    void drawGrass(GLuint grassShader, const Mat4& projection, const Mat4& view, float time, const Grass& grassMesh, const Vec3& camPos) {
+    void drawGrass(GLuint grassShader, const Mat4& projection, const Mat4& view, float time, const Grass& grassMesh, const Vec3& camPos, const Vec3& lightDir, const Vec3& lightColor, float timeOfDay) {
         glUseProgram(grassShader);
         GLint transformLoc = glGetUniformLocation(grassShader, "transform");
         GLint modelLoc = glGetUniformLocation(grassShader, "model");
@@ -203,10 +215,12 @@ public:
         GLint lightDirLoc = glGetUniformLocation(grassShader, "lightDir");
         GLint lightColorLoc = glGetUniformLocation(grassShader, "lightColor");
         GLint viewPosLoc = glGetUniformLocation(grassShader, "viewPos");
+        GLint timeOfDayLoc = glGetUniformLocation(grassShader, "timeOfDay");
 
         glUniform1f(timeLoc, time);
-        glUniform3f(lightDirLoc, -0.5f, -0.8f, -0.3f);
-        glUniform3f(lightColorLoc, 1.0f, 0.95f, 0.9f);
+        glUniform1f(timeOfDayLoc, timeOfDay);
+        glUniform3f(lightDirLoc, lightDir.x, lightDir.y, lightDir.z);
+        glUniform3f(lightColorLoc, lightColor.x, lightColor.y, lightColor.z);
         glUniform3f(viewPosLoc, camPos.x, camPos.y, camPos.z);
 
         glDisable(GL_CULL_FACE);
@@ -216,7 +230,6 @@ public:
             for (int g = 0; g < (int)chunk.grassPositions.size(); ++g) {
                 Vec3 pos = chunk.grassPositions[g];
 
-                // distance culling to 40 meters for high performance on laptop/integrated GPUs
                 float distSq = (pos.x - camPos.x)*(pos.x - camPos.x) + (pos.z - camPos.z)*(pos.z - camPos.z);
                 if (distSq > 1600.0f)
                     continue;

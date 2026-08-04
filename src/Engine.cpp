@@ -54,9 +54,12 @@ GLuint Engine::createShaderProgram(const char* vertPath, const char* fragPath) {
 Engine::Engine(const std::string& windowTitle, unsigned int winWidth, unsigned int winHeight)
     : window(nullptr), width(winWidth), height(winHeight), title(windowTitle),
       shaderProgram(0), waterShaderProgram(0), skyboxShaderProgram(0), treeShaderProgram(0),
-      grassShaderProgram(0), particleShaderProgram(0), postprocessShaderProgram(0),
+      grassShaderProgram(0), particleShaderProgram(0), postprocessShaderProgram(0), shadowShaderProgram(0),
       framebuffer(0), colorTexture(0), depthRenderbuffer(0), screenQuadVAO(0),
       reflectionFramebuffer(0), reflectionColorTexture(0), reflectionDepthBuffer(0),
+      shadowFramebuffer(0), shadowDepthMap(0),
+      timeOfDay(10.0f), dayNightAutoAdvance(false), tPressedLastFrame(false),
+      minimapFramebuffer(0), minimapColorTexture(0), minimapDepthBuffer(0),
       chunkManager(32, 4), camera(Vec3(0.0f, 20.0f, 50.0f)), deltaTime(0.0f), lastFrame(0.0f),
       lastMouseX(winWidth / 2.0f), lastMouseY(winHeight / 2.0f), firstMouse(true),
       isFullscreen(false), windowedX(100), windowedY(100), windowedWidth(winWidth),
@@ -166,6 +169,54 @@ void Engine::setupReflectionFramebuffer() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Engine::setupShadowFramebuffer() {
+    glGenFramebuffers(1, &shadowFramebuffer);
+
+    glGenTextures(1, &shadowDepthMap);
+    glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowDepthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cerr << "Shadow framebuffer incomplete!" << std::endl;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Engine::setupMinimapFramebuffer() {
+    glGenFramebuffers(1, &minimapFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, minimapFramebuffer);
+
+    glGenTextures(1, &minimapColorTexture);
+    glBindTexture(GL_TEXTURE_2D, minimapColorTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, minimapColorTexture, 0);
+
+    glGenRenderbuffers(1, &minimapDepthBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, minimapDepthBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 256, 256);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, minimapDepthBuffer);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cerr << "Minimap framebuffer incomplete!" << std::endl;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Engine::resizeFramebuffer(int w, int h) {
     if (colorTexture != 0) {
         glBindTexture(GL_TEXTURE_2D, colorTexture);
@@ -186,6 +237,10 @@ void Engine::resizeReflectionFramebuffer(int w, int h) {
         glBindRenderbuffer(GL_RENDERBUFFER, reflectionDepthBuffer);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w / 4, h / 4);
     }
+}
+
+void Engine::resizeMinimapFramebuffer(int w, int h) {
+    // Minimap is fixed 256x256
 }
 
 void Engine::init() {
@@ -236,8 +291,9 @@ void Engine::init() {
     grassShaderProgram = createShaderProgram("shaders/grass.vert", "shaders/grass.frag");
     particleShaderProgram = createShaderProgram("shaders/particle.vert", "shaders/particle.frag");
     postprocessShaderProgram = createShaderProgram("shaders/postprocess.vert", "shaders/postprocess.frag");
+    shadowShaderProgram = createShaderProgram("shaders/shadow.vert", "shaders/shadow.frag");
 
-    if (shaderProgram == false || waterShaderProgram == false || skyboxShaderProgram == false || treeShaderProgram == false || grassShaderProgram == false || particleShaderProgram == false || postprocessShaderProgram == false) {
+    if (shaderProgram == false || waterShaderProgram == false || skyboxShaderProgram == false || treeShaderProgram == false || grassShaderProgram == false || particleShaderProgram == false || postprocessShaderProgram == false || shadowShaderProgram == false) {
         std::cerr << "Failed to create shader program!" << std::endl;
         glfwTerminate();
         exit(-1);
@@ -245,6 +301,8 @@ void Engine::init() {
 
     setupFramebuffer();
     setupReflectionFramebuffer();
+    setupShadowFramebuffer();
+    setupMinimapFramebuffer();
     setupBuffers();
 }
 
@@ -272,6 +330,16 @@ void Engine::processInput() {
         f11PressedLastFrame = false;
     }
 
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
+        if (!tPressedLastFrame) {
+            dayNightAutoAdvance = !dayNightAutoAdvance;
+            tPressedLastFrame = true;
+        }
+    }
+    else {
+        tPressedLastFrame = false;
+    }
+
     float speedMultiplier = 1.0f;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         speedMultiplier = 2.5f;
@@ -287,17 +355,97 @@ void Engine::processInput() {
 }
 
 void Engine::run() {
-    float waterHeight = -10.0f;
+    float waterHeight = -11.8f;
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = (float)glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        if (dayNightAutoAdvance) {
+            timeOfDay += deltaTime * 0.5f;
+            if (timeOfDay >= 24.0f)
+                timeOfDay -= 24.0f;
+        }
+
+        float sunAngle = ((timeOfDay - 6.0f) / 24.0f) * 2.0f * 3.14159265f;
+        float sdx = -std::cos(sunAngle);
+        float sdy = -std::sin(sunAngle);
+        float sdz = -0.3f;
+        float slen = std::sqrt(sdx*sdx + sdy*sdy + sdz*sdz);
+        sdx /= slen; sdy /= slen; sdz /= slen;
+
+        float sunElevation = std::sin(sunAngle);
+        float lcR, lcG, lcB;
+        if (sunElevation > 0.15f) {
+            lcR = 1.0f; lcG = 0.95f; lcB = 0.9f;
+        }
+        else if (sunElevation > -0.05f) {
+            float t = (sunElevation + 0.05f) / 0.20f;
+            lcR = 1.0f; lcG = 0.4f + 0.55f * t; lcB = 0.1f + 0.8f * t;
+        }
+        else {
+            lcR = 0.1f; lcG = 0.15f; lcB = 0.3f;
+        }
+
         processInput();
         chunkManager.update(camera.position, noiseGen);
 
         Mat4 projection = Mat4::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f);
+
+        // Compute Directional Light Space Matrix for Shadows
+        Vec3 lightDirVec = Vec3(sdx, sdy, sdz).normalize();
+        Mat4 lightProjection = Mat4::ortho(-120.0f, 120.0f, -120.0f, 120.0f, 1.0f, 400.0f);
+        Vec3 lightPos = camera.position - lightDirVec * 200.0f;
+        Mat4 lightView = Mat4::lookAt(lightPos, camera.position, Vec3(0.0f, 1.0f, 0.0f));
+        Mat4 lightSpaceMatrix = lightProjection * lightView;
+
+        // ===== PASS 0: Directional Shadow Map Pass =====
+        glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
+        glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glCullFace(GL_FRONT);
+
+        glUseProgram(shadowShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(shadowShaderProgram, "lightSpaceMatrix"), 1, false, lightSpaceMatrix.m);
+
+        GLint shadowModelLoc = glGetUniformLocation(shadowShaderProgram, "model");
+        for (int i = 0; i < (int)chunkManager.activeChunks.size(); ++i) {
+            const Chunk& chunk = chunkManager.activeChunks[i];
+            float worldX = (float)(chunk.chunkX * chunkManager.chunkSize);
+            float worldZ = (float)(chunk.chunkZ * chunkManager.chunkSize);
+            Mat4 model = Mat4::translate(Vec3(worldX, -10.0f, worldZ));
+            glUniformMatrix4fv(shadowModelLoc, 1, false, model.m);
+            chunk.mesh.draw();
+        }
+
+        for (int i = 0; i < (int)chunkManager.activeChunks.size(); ++i) {
+            const Chunk& chunk = chunkManager.activeChunks[i];
+            for (int t = 0; t < (int)chunk.treePositions.size(); ++t) {
+                Vec3 pos = chunk.treePositions[t];
+                float distSq = (pos.x - camera.position.x)*(pos.x - camera.position.x) + (pos.z - camera.position.z)*(pos.z - camera.position.z);
+                if (distSq > 160000.0f) continue;
+                Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
+                glUniformMatrix4fv(shadowModelLoc, 1, false, model.m);
+                tree.draw();
+            }
+        }
+
+        for (int i = 0; i < (int)chunkManager.activeChunks.size(); ++i) {
+            const Chunk& chunk = chunkManager.activeChunks[i];
+            for (int r = 0; r < (int)chunk.rockPositions.size(); ++r) {
+                Vec3 pos = chunk.rockPositions[r];
+                float distSq = (pos.x - camera.position.x)*(pos.x - camera.position.x) + (pos.z - camera.position.z)*(pos.z - camera.position.z);
+                if (distSq > 160000.0f) continue;
+                Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
+                glUniformMatrix4fv(shadowModelLoc, 1, false, model.m);
+                rock.draw();
+            }
+        }
+
+        glCullFace(GL_BACK);
+
 
         // ===== PASS 1a: Render Planar Reflection into reflectionFramebuffer =====
         glBindFramebuffer(GL_FRAMEBUFFER, reflectionFramebuffer);
@@ -313,23 +461,25 @@ void Engine::run() {
         glUseProgram(skyboxShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(skyboxShaderProgram, "projection"), 1, false, projection.m);
         glUniformMatrix4fv(glGetUniformLocation(skyboxShaderProgram, "view"), 1, false, reflectView.m);
-        glUniform3f(glGetUniformLocation(skyboxShaderProgram, "lightDir"), -0.5f, -0.8f, -0.3f);
+        glUniform3f(glGetUniformLocation(skyboxShaderProgram, "lightDir"), sdx, sdy, sdz);
         glUniform1f(glGetUniformLocation(skyboxShaderProgram, "time"), currentFrame);
+        glUniform1f(glGetUniformLocation(skyboxShaderProgram, "timeOfDay"), timeOfDay);
         skybox.draw();
 
         // 2. Terrain in reflection
         glUseProgram(shaderProgram);
-        glUniform3f(glGetUniformLocation(shaderProgram, "lightDir"), -0.5f, -0.8f, -0.3f);
-        glUniform3f(glGetUniformLocation(shaderProgram, "lightColor"), 1.0f, 0.95f, 0.9f);
+        glUniform3f(glGetUniformLocation(shaderProgram, "lightDir"), sdx, sdy, sdz);
+        glUniform3f(glGetUniformLocation(shaderProgram, "lightColor"), lcR, lcG, lcB);
         glUniform3f(glGetUniformLocation(shaderProgram, "viewPos"), reflectCamPos.x, reflectCamPos.y, reflectCamPos.z);
         glUniform1f(glGetUniformLocation(shaderProgram, "time"), currentFrame);
+        glUniform1f(glGetUniformLocation(shaderProgram, "timeOfDay"), timeOfDay);
         chunkManager.draw(shaderProgram, projection, reflectView);
 
         // 3. Trees in reflection
-        chunkManager.drawTrees(treeShaderProgram, projection, reflectView, currentFrame, tree, reflectCamPos);
+        chunkManager.drawTrees(treeShaderProgram, projection, reflectView, currentFrame, tree, reflectCamPos, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
 
         // 4. Rocks in reflection
-        chunkManager.drawRocks(treeShaderProgram, projection, reflectView, currentFrame, rock, reflectCamPos);
+        chunkManager.drawRocks(treeShaderProgram, projection, reflectView, currentFrame, rock, reflectCamPos, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
 
 
         // ===== PASS 1b: Render Scene to Main Framebuffer =====
@@ -339,32 +489,45 @@ void Engine::run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, shadowDepthMap);
+
         Mat4 view = camera.getViewMatrix();
 
         // 1. Skybox
         glUseProgram(skyboxShaderProgram);
         glUniformMatrix4fv(glGetUniformLocation(skyboxShaderProgram, "projection"), 1, false, projection.m);
         glUniformMatrix4fv(glGetUniformLocation(skyboxShaderProgram, "view"), 1, false, view.m);
-        glUniform3f(glGetUniformLocation(skyboxShaderProgram, "lightDir"), -0.5f, -0.8f, -0.3f);
+        glUniform3f(glGetUniformLocation(skyboxShaderProgram, "lightDir"), sdx, sdy, sdz);
         glUniform1f(glGetUniformLocation(skyboxShaderProgram, "time"), currentFrame);
+        glUniform1f(glGetUniformLocation(skyboxShaderProgram, "timeOfDay"), timeOfDay);
         skybox.draw();
 
         // 2. Terrain chunks
         glUseProgram(shaderProgram);
-        glUniform3f(glGetUniformLocation(shaderProgram, "lightDir"), -0.5f, -0.8f, -0.3f);
-        glUniform3f(glGetUniformLocation(shaderProgram, "lightColor"), 1.0f, 0.95f, 0.9f);
+        glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "lightSpaceMatrix"), 1, false, lightSpaceMatrix.m);
+        glUniform1i(glGetUniformLocation(shaderProgram, "shadowMap"), 2);
+        glUniform3f(glGetUniformLocation(shaderProgram, "lightDir"), sdx, sdy, sdz);
+        glUniform3f(glGetUniformLocation(shaderProgram, "lightColor"), lcR, lcG, lcB);
         glUniform3f(glGetUniformLocation(shaderProgram, "viewPos"), camera.position.x, camera.position.y, camera.position.z);
         glUniform1f(glGetUniformLocation(shaderProgram, "time"), currentFrame);
+        glUniform1f(glGetUniformLocation(shaderProgram, "timeOfDay"), timeOfDay);
         chunkManager.draw(shaderProgram, projection, view);
 
         // 3. Trees
-        chunkManager.drawTrees(treeShaderProgram, projection, view, currentFrame, tree, camera.position);
+        glUseProgram(treeShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(treeShaderProgram, "lightSpaceMatrix"), 1, false, lightSpaceMatrix.m);
+        glUniform1i(glGetUniformLocation(treeShaderProgram, "shadowMap"), 2);
+        chunkManager.drawTrees(treeShaderProgram, projection, view, currentFrame, tree, camera.position, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
 
         // 4. Rocks
-        chunkManager.drawRocks(treeShaderProgram, projection, view, currentFrame, rock, camera.position);
+        glUseProgram(treeShaderProgram);
+        glUniformMatrix4fv(glGetUniformLocation(treeShaderProgram, "lightSpaceMatrix"), 1, false, lightSpaceMatrix.m);
+        glUniform1i(glGetUniformLocation(treeShaderProgram, "shadowMap"), 2);
+        chunkManager.drawRocks(treeShaderProgram, projection, view, currentFrame, rock, camera.position, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
 
         // 5. Dense Grass Carpet
-        chunkManager.drawGrass(grassShaderProgram, projection, view, currentFrame, grass, camera.position);
+        chunkManager.drawGrass(grassShaderProgram, projection, view, currentFrame, grass, camera.position, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
 
         // 6. Floating Ambient Particles (Fireflies / Glowing Pollen Motes)
         glUseProgram(particleShaderProgram);
@@ -372,6 +535,7 @@ void Engine::run() {
         glUniformMatrix4fv(glGetUniformLocation(particleShaderProgram, "view"), 1, false, view.m);
         glUniform1f(glGetUniformLocation(particleShaderProgram, "time"), currentFrame);
         glUniform3f(glGetUniformLocation(particleShaderProgram, "camPos"), camera.position.x, camera.position.y, camera.position.z);
+        glUniform1f(glGetUniformLocation(particleShaderProgram, "timeOfDay"), timeOfDay);
         particles.draw();
 
         // 7. Water with Planar Reflection texture
@@ -381,7 +545,8 @@ void Engine::run() {
         glUniformMatrix4fv(glGetUniformLocation(waterShaderProgram, "transform"), 1, false, waterMvp.m);
         glUniformMatrix4fv(glGetUniformLocation(waterShaderProgram, "model"), 1, false, waterModel.m);
         glUniform1f(glGetUniformLocation(waterShaderProgram, "time"), currentFrame);
-        glUniform3f(glGetUniformLocation(waterShaderProgram, "lightDir"), -0.5f, -0.8f, -0.3f);
+        glUniform1f(glGetUniformLocation(waterShaderProgram, "timeOfDay"), timeOfDay);
+        glUniform3f(glGetUniformLocation(waterShaderProgram, "lightDir"), sdx, sdy, sdz);
         glUniform3f(glGetUniformLocation(waterShaderProgram, "viewPos"), camera.position.x, camera.position.y, camera.position.z);
 
         glActiveTexture(GL_TEXTURE1);
@@ -397,8 +562,8 @@ void Engine::run() {
         glDisable(GL_DEPTH_TEST);
 
         // Compute sun screen-space position for God Rays
-        Vec3 lightDir = Vec3(-0.5f, -0.8f, -0.3f).normalize();
-        Vec3 sunWorldPos = camera.position - lightDir * 500.0f;
+        lightDirVec = Vec3(sdx, sdy, sdz).normalize();
+        Vec3 sunWorldPos = camera.position - lightDirVec * 500.0f;
         Mat4 sunMvp = projection * view;
 
         float clipX = sunMvp.m[0] * sunWorldPos.x + sunMvp.m[4] * sunWorldPos.y + sunMvp.m[8]  * sunWorldPos.z + sunMvp.m[12];
@@ -424,6 +589,8 @@ void Engine::run() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, colorTexture);
         glUniform1i(glGetUniformLocation(postprocessShaderProgram, "screenTexture"), 0);
+        
+        glUniform1f(glGetUniformLocation(postprocessShaderProgram, "timeOfDay"), timeOfDay);
 
         glUniform2f(glGetUniformLocation(postprocessShaderProgram, "sunScreenPos"), sunScreenX, sunScreenY);
         glUniform1f(glGetUniformLocation(postprocessShaderProgram, "sunInView"), sunInView);
@@ -462,6 +629,18 @@ void Engine::cleanup() {
     if (reflectionDepthBuffer != 0)
         glDeleteRenderbuffers(1, &reflectionDepthBuffer);
 
+    if (shadowFramebuffer != 0)
+        glDeleteFramebuffers(1, &shadowFramebuffer);
+    if (shadowDepthMap != 0)
+        glDeleteTextures(1, &shadowDepthMap);
+
+    if (minimapFramebuffer != 0)
+        glDeleteFramebuffers(1, &minimapFramebuffer);
+    if (minimapColorTexture != 0)
+        glDeleteTextures(1, &minimapColorTexture);
+    if (minimapDepthBuffer != 0)
+        glDeleteRenderbuffers(1, &minimapDepthBuffer);
+
     if (screenQuadVAO != 0)
         glDeleteVertexArrays(1, &screenQuadVAO);
 
@@ -479,6 +658,8 @@ void Engine::cleanup() {
         glDeleteProgram(particleShaderProgram);
     if (postprocessShaderProgram != 0)
         glDeleteProgram(postprocessShaderProgram);
+    if (shadowShaderProgram != 0)
+        glDeleteProgram(shadowShaderProgram);
 
     glfwTerminate();
 }

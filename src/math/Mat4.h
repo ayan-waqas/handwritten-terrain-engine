@@ -67,6 +67,19 @@ public:
         return result;
     }
 
+    // orthographic projection matrix
+    static Mat4 ortho(float left, float right, float bottom, float top, float nearPlane, float farPlane) {
+        Mat4 result;
+        result.m[0] = 2.0f / (right - left);
+        result.m[5] = 2.0f / (top - bottom);
+        result.m[10] = -2.0f / (farPlane - nearPlane);
+        result.m[12] = -(right + left) / (right - left);
+        result.m[13] = -(top + bottom) / (top - bottom);
+        result.m[14] = -(farPlane + nearPlane) / (farPlane - nearPlane);
+        result.m[15] = 1.0f;
+        return result;
+    }
+
     // constructs camera view transform from position (eye), target (center), and up vector
     static Mat4 lookAt(const Vec3& eye, const Vec3& center, const Vec3& up) {
         Vec3 f = (center - eye).normalize();     // forward direction

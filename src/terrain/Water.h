@@ -14,7 +14,7 @@ public:
 
     void setup(float size = 1500.0f) {
         float half = size / 2.0f;
-        float waterHeight = 2.0f;
+        float waterHeight = 0.0f;
 
         float vertices[] = {
             -half, waterHeight, -half,

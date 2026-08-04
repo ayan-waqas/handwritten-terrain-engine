@@ -100,24 +100,45 @@ public:
         return total / maxValue;
     }
 
-    // organic mountain terrain with domain warping and large-scale height variation
+    // Geographic landforms: Continental noise partitions world into Plains, Canyons, and Alpine Ranges
     float terrainHeight(float wx, float wz) const {
+        float cx = wx * 0.005f;
+        float cz = wz * 0.005f;
+
+        // Continentalness noise (-1.0 to 1.0)
+        float continental = fBm(cx, cz, 3, 0.5f, 2.0f);
+
+        // Domain warping for natural mountain ridges
         float sx = wx * 0.035f;
         float sz = wz * 0.035f;
-
-        // domain warping offsets sampling coordinates for serpentine alpine ridges
         float warpX = fBm(sx * 0.4f, sz * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
         float warpZ = fBm((sx + 4.2f) * 0.4f, (sz + 2.8f) * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
 
-        // 5-octave ridged mountain sampling with domain warp
+        // 1. Lush Rolling Plains / Meadows (low continentalness)
+        float plainsNoise = fBm(wx * 0.012f, wz * 0.012f, 4, 0.5f, 2.0f);
+        float plainsHeight = (plainsNoise * 0.5f + 0.5f) * 6.0f - 1.5f;
+
+        // 2. Carved River Canyons / Terraced Plateaus (mid continentalness)
+        float canyonNoise = fBm(wx * 0.025f, wz * 0.025f, 4, 0.5f, 2.0f);
+        float canyonStep = std::floor(canyonNoise * 4.0f) * 2.5f;
+        float canyonHeight = canyonStep + canyonNoise * 2.0f + 1.0f;
+
+        // 3. Alpine Mountain Ranges (high continentalness)
         float ridge = ridgedfBm(sx + warpX, sz + warpZ, 5, 0.48f, 2.0f);
+        float mountainHeight = (ridge - 0.20f) * 26.0f;
 
-        // large-scale height variation across the world
-        float variation = fBm(sx * 0.20f, sz * 0.20f, 2, 0.5f, 2.0f);
-        variation = variation * 0.5f + 0.5f;
-
-        float heightScale = 0.5f + variation * 1.1f;
-        return (ridge * heightScale - 0.22f) * 22.0f;
+        // Blend between Plains (cont < -0.05), Canyons (-0.05 to 0.20), and Alpine Peaks (cont >= 0.20)
+        if (continental < -0.05f) {
+            float t = std::clamp((continental + 0.5f) / 0.45f, 0.0f, 1.0f);
+            return lerp(t, plainsHeight, plainsHeight * 0.7f + canyonHeight * 0.3f);
+        }
+        else if (continental < 0.20f) {
+            float t = (continental + 0.05f) / 0.25f;
+            return lerp(t, canyonHeight, mountainHeight * 0.8f);
+        }
+        else {
+            return mountainHeight;
+        }
     }
 };
 

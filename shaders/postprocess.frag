@@ -6,8 +6,8 @@ out vec4 FragColor;
 uniform sampler2D screenTexture;
 uniform vec2 sunScreenPos;
 uniform float sunInView;
+uniform float timeOfDay;
 
-// ACES Filmic Tone Mapping Curve (Cinematic color grading)
 vec3 acesFilm(vec3 x) {
     float a = 2.51;
     float b = 0.03;
@@ -20,7 +20,6 @@ vec3 acesFilm(vec3 x) {
 void main() {
     vec3 color = texture(screenTexture, TexCoords).rgb;
 
-    // 1. Bloom: extract and blur bright pixels
     vec3 bloom = vec3(0.0);
     vec2 texelSize = 1.0 / vec2(textureSize(screenTexture, 0));
 
@@ -36,8 +35,11 @@ void main() {
     bloom /= 25.0;
     color += bloom * 0.5;
 
-    // 2. Volumetric God Rays (radial blur sun shafts)
-    if (sunInView > 0.5) {
+    float sunAngle = ((timeOfDay - 6.0) / 24.0) * 6.28318;
+    float sunElev = sin(sunAngle);
+    float godRayIntensity = smoothstep(-0.05, 0.1, sunElev);
+
+    if (sunInView > 0.5 && godRayIntensity > 0.0) {
         const int NUM_SAMPLES = 24;
         float density = 0.85;
         float weight = 0.045;
@@ -64,16 +66,22 @@ void main() {
             illuminationDecay *= decay;
         }
 
-        vec3 godRayColor = vec3(1.0, 0.88, 0.62) * godRays * 1.6;
+        vec3 dayGodRay = vec3(1.0, 0.88, 0.62);
+        vec3 sunsetGodRay = vec3(1.0, 0.5, 0.2);
+        vec3 baseGodRayColor = mix(sunsetGodRay, dayGodRay, smoothstep(0.0, 0.3, sunElev));
+
+        vec3 godRayColor = baseGodRayColor * godRays * 1.6 * godRayIntensity;
         color += godRayColor;
     }
 
-    // 3. ACES Filmic Tone Mapping (Cinematic contrast)
     color = acesFilm(color * 1.1);
 
-    // 4. Vignette: subtle darkening at screen edges
-    float dist = length(TexCoords - vec2(0.5));
-    float vignette = 1.0 - smoothstep(0.55, 1.15, dist);
+    float distCenter = length(TexCoords - vec2(0.5));
+    float vignetteDay = 1.0 - smoothstep(0.55, 1.15, distCenter);
+    float vignetteNight = 1.0 - smoothstep(0.35, 0.95, distCenter);
+    float dayFactor = smoothstep(-0.1, 0.2, sunElev);
+
+    float vignette = mix(vignetteNight, vignetteDay, dayFactor);
     color *= vignette;
 
     FragColor = vec4(color, 1.0);

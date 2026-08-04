@@ -28,6 +28,7 @@ private:
     GLuint grassShaderProgram;
     GLuint particleShaderProgram;
     GLuint postprocessShaderProgram;
+    GLuint shadowShaderProgram;
 
     // post-processing framebuffer
     GLuint framebuffer;
@@ -39,7 +40,23 @@ private:
     GLuint reflectionFramebuffer;
     GLuint reflectionColorTexture;
     GLuint reflectionDepthBuffer;
+
+    // directional shadow depth map framebuffer
+    GLuint shadowFramebuffer;
+    GLuint shadowDepthMap;
+    const unsigned int SHADOW_WIDTH = 2048;
+    const unsigned int SHADOW_HEIGHT = 2048;
     
+    // Day/night cycle
+    float timeOfDay;       // 0.0 to 24.0
+    bool dayNightAutoAdvance;
+    bool tPressedLastFrame;
+
+    // Minimap FBO
+    GLuint minimapFramebuffer;
+    GLuint minimapColorTexture;
+    GLuint minimapDepthBuffer;
+
     PerlinNoise noiseGen;
     ChunkManager chunkManager;
     Water water;
@@ -72,8 +89,11 @@ private:
     void setupBuffers();
     void setupFramebuffer();
     void setupReflectionFramebuffer();
+    void setupShadowFramebuffer();
     void resizeFramebuffer(int w, int h);
     void resizeReflectionFramebuffer(int w, int h);
+    void setupMinimapFramebuffer();
+    void resizeMinimapFramebuffer(int w, int h);
     void processInput();
     void cleanup();
     void toggleFullscreen();
