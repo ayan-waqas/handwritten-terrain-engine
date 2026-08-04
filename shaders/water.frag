@@ -55,11 +55,11 @@ void main() {
     float heightFog = exp(-max(WorldPos.y + 8.0, 0.0) * 0.04);
     float fogFactor = clamp(distFog + heightFog * 0.15, 0.0, 1.0);
 
-    vec3 fogDay = vec3(0.48, 0.72, 0.92);
-    vec3 fogSunset = vec3(0.8, 0.5, 0.3);
-    vec3 fogNight = vec3(0.02, 0.05, 0.12);
+    vec3 dayFog = vec3(0.72, 0.76, 0.80);
+    vec3 duskFog = vec3(0.65, 0.45, 0.32);
+    vec3 nightFog = vec3(0.02, 0.05, 0.12);
 
-    vec3 currentFog = mix(fogNight, mix(fogSunset, fogDay, smoothstep(0.0, 0.3, sunElevation)), dayFactor);
+    vec3 currentFog = mix(nightFog, mix(duskFog, dayFog, smoothstep(0.0, 0.3, sunElevation)), dayFactor);
 
     waterColor = mix(waterColor, currentFog, fogFactor);
 

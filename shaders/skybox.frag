@@ -23,8 +23,8 @@ void main() {
     
     if (sunElevation > 0.2) {
         skyZenith = vec3(0.12, 0.35, 0.82);
-        skyHorizon = vec3(0.48, 0.72, 0.92);
-        groundHaze = vec3(0.40, 0.55, 0.65);
+        skyHorizon = vec3(0.72, 0.76, 0.80);
+        groundHaze = vec3(0.60, 0.64, 0.68);
         sunCol = vec3(1.0, 1.0, 1.0);
         sunHaloCol = vec3(1.0, 0.9, 0.8);
     } else if (sunElevation > 0.0) {

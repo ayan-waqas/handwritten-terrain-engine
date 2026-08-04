@@ -72,9 +72,18 @@ void main() {
 
         vec3 godRayColor = baseGodRayColor * godRays * 1.6 * godRayIntensity;
         color += godRayColor;
+
+        // Soft Sun Lens Flare Ring Glow
+        float distToSun = length(TexCoords - sunScreenPos);
+        float flare = exp(-distToSun * 4.5) * 0.35 * godRayIntensity;
+        color += baseGodRayColor * flare;
     }
 
-    color = acesFilm(color * 1.1);
+    color = acesFilm(color * 1.12);
+
+    // Subtle Vibrance & Saturation Lift for clean modern look
+    float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = mix(vec3(luma), color, 1.12);
 
     float distCenter = length(TexCoords - vec2(0.5));
     float vignetteDay = 1.0 - smoothstep(0.55, 1.15, distCenter);

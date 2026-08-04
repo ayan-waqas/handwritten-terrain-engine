@@ -44,8 +44,8 @@ private:
     // directional shadow depth map framebuffer
     GLuint shadowFramebuffer;
     GLuint shadowDepthMap;
-    const unsigned int SHADOW_WIDTH = 2048;
-    const unsigned int SHADOW_HEIGHT = 2048;
+    const unsigned int SHADOW_WIDTH = 1024;
+    const unsigned int SHADOW_HEIGHT = 1024;
     
     // Day/night cycle
     float timeOfDay;       // 0.0 to 24.0

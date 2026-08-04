@@ -420,27 +420,16 @@ void Engine::run() {
             chunk.mesh.draw();
         }
 
+        // Only draw nearby trees (70m) into shadow map for high FPS
         for (int i = 0; i < (int)chunkManager.activeChunks.size(); ++i) {
             const Chunk& chunk = chunkManager.activeChunks[i];
             for (int t = 0; t < (int)chunk.treePositions.size(); ++t) {
                 Vec3 pos = chunk.treePositions[t];
                 float distSq = (pos.x - camera.position.x)*(pos.x - camera.position.x) + (pos.z - camera.position.z)*(pos.z - camera.position.z);
-                if (distSq > 160000.0f) continue;
+                if (distSq > 4900.0f) continue;
                 Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
                 glUniformMatrix4fv(shadowModelLoc, 1, false, model.m);
                 tree.draw();
-            }
-        }
-
-        for (int i = 0; i < (int)chunkManager.activeChunks.size(); ++i) {
-            const Chunk& chunk = chunkManager.activeChunks[i];
-            for (int r = 0; r < (int)chunk.rockPositions.size(); ++r) {
-                Vec3 pos = chunk.rockPositions[r];
-                float distSq = (pos.x - camera.position.x)*(pos.x - camera.position.x) + (pos.z - camera.position.z)*(pos.z - camera.position.z);
-                if (distSq > 160000.0f) continue;
-                Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
-                glUniformMatrix4fv(shadowModelLoc, 1, false, model.m);
-                rock.draw();
             }
         }
 
@@ -450,7 +439,7 @@ void Engine::run() {
         // ===== PASS 1a: Render Planar Reflection into reflectionFramebuffer =====
         glBindFramebuffer(GL_FRAMEBUFFER, reflectionFramebuffer);
         glViewport(0, 0, width / 4, height / 4);
-        glClearColor(0.48f, 0.72f, 0.92f, 1.0f);
+        glClearColor(0.72f, 0.76f, 0.80f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 
@@ -475,17 +464,11 @@ void Engine::run() {
         glUniform1f(glGetUniformLocation(shaderProgram, "timeOfDay"), timeOfDay);
         chunkManager.draw(shaderProgram, projection, reflectView);
 
-        // 3. Trees in reflection
-        chunkManager.drawTrees(treeShaderProgram, projection, reflectView, currentFrame, tree, reflectCamPos, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
-
-        // 4. Rocks in reflection
-        chunkManager.drawRocks(treeShaderProgram, projection, reflectView, currentFrame, rock, reflectCamPos, Vec3(sdx, sdy, sdz), Vec3(lcR, lcG, lcB), timeOfDay);
-
 
         // ===== PASS 1b: Render Scene to Main Framebuffer =====
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glViewport(0, 0, width, height);
-        glClearColor(0.48f, 0.72f, 0.92f, 1.0f);
+        glClearColor(0.72f, 0.76f, 0.80f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_DEPTH_TEST);
 

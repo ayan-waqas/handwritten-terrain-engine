@@ -159,7 +159,7 @@ public:
                 Vec3 pos = chunk.treePositions[t];
 
                 float distSq = (pos.x - camPos.x)*(pos.x - camPos.x) + (pos.z - camPos.z)*(pos.z - camPos.z);
-                if (distSq > 160000.0f)
+                if (distSq > 14400.0f)
                     continue;
 
                 Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
@@ -194,7 +194,7 @@ public:
                 Vec3 pos = chunk.rockPositions[r];
 
                 float distSq = (pos.x - camPos.x)*(pos.x - camPos.x) + (pos.z - camPos.z)*(pos.z - camPos.z);
-                if (distSq > 160000.0f)
+                if (distSq > 14400.0f)
                     continue;
 
                 Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));
@@ -231,7 +231,7 @@ public:
                 Vec3 pos = chunk.grassPositions[g];
 
                 float distSq = (pos.x - camPos.x)*(pos.x - camPos.x) + (pos.z - camPos.z)*(pos.z - camPos.z);
-                if (distSq > 1600.0f)
+                if (distSq > 900.0f)
                     continue;
 
                 Mat4 model = Mat4::translate(Vec3(pos.x, pos.y - 10.0f, pos.z));

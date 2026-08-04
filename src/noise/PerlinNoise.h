@@ -114,9 +114,11 @@ public:
         float warpX = fBm(sx * 0.4f, sz * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
         float warpZ = fBm((sx + 4.2f) * 0.4f, (sz + 2.8f) * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
 
-        // 1. Lush Rolling Plains / Meadows (low continentalness)
+        // 1. Lush Rolling Plains / Meadows with Crater Puddles
         float plainsNoise = fBm(wx * 0.012f, wz * 0.012f, 4, 0.5f, 2.0f);
-        float plainsHeight = (plainsNoise * 0.5f + 0.5f) * 6.0f - 1.5f;
+        float puddleNoise = fBm(wx * 0.045f, wz * 0.045f, 2, 0.5f, 2.0f);
+        float craterCarve = (puddleNoise < -0.35f) ? (puddleNoise + 0.35f) * 4.5f : 0.0f;
+        float plainsHeight = (plainsNoise * 0.5f + 0.5f) * 6.0f - 1.5f + craterCarve;
 
         // 2. Carved River Canyons / Terraced Plateaus (mid continentalness)
         float canyonNoise = fBm(wx * 0.025f, wz * 0.025f, 4, 0.5f, 2.0f);
