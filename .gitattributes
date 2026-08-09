@@ -1,9 +1,2 @@
-# Treat all C++ header files in this project as C++
-*.h linguist-language=C++
-
-# Count GLSL shaders for language statistics
-shaders/*.vert linguist-language=GLSL
-shaders/*.frag linguist-language=GLSL
-
-# Exclude ONLY miniaudio from language statistics
+# Ignore only miniaudio library from language statistics
 external/miniaudio/** linguist-vendored
