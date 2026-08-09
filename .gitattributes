@@ -5,5 +5,5 @@
 shaders/*.vert linguist-language=GLSL
 shaders/*.frag linguist-language=GLSL
 
-# Vendor miniaudio & external C libraries so audio code is excluded from language stats
-external/** linguist-vendored
+# Exclude ONLY miniaudio from language statistics
+external/miniaudio/** linguist-vendored
