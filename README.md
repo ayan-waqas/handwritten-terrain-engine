@@ -1,25 +1,20 @@
 # Handwritten Procedural Terrain Engine
 
-A high-performance procedural terrain rendering engine built from scratch in C++17 and OpenGL 3.3 Core without external graphics software libraries or engine frameworks (only GLFW and GLAD).
+A C++17 and OpenGL 3.3 Core procedural terrain engine built from scratch using C++, OpenGL, GLFW, and GLAD without third-party graphics frameworks.
 
 ---
 
 ## Key Highlights
 
-* **Infinite Dynamic Landscapes**: Generates an endless, seamless world featuring rolling green plains, steep carved river canyons, and towering mountain ranges as you explore.
-  * *Technical*: Multi-octave fractional Brownian motion (fBm) continentalness noise blending distinct terrain height regimes with domain warping.
-* **Real-time Sun and Moon Shadows**: Dynamic shadows sweep across mountain slopes, trees, and rocks as the sun and moon orbit through a full day/night cycle.
-  * *Technical*: Directional shadow mapping using a 1024x1024 depth FBO pass with 9-tap PCF (Percentage-Closer Filtering) and normal-offset bias.
-* **Realistic Water with Planar Reflections**: Water surfaces feature real-time reflections of the sky and terrain, depth-based turquoise coloring, and animated wave motion.
-  * *Technical*: Off-screen frame buffer object (FBO) planar reflection rendering, Fresnel equation reflection-refraction blending, and wave normal perturbation.
-* **Dynamic 24-Hour Day/Night Atmosphere**: Seamless lighting changes from golden sunrise to blue daytime sky, crimson sunsets, and starry nights with a glowing moon disc and floating fireflies.
-  * *Technical*: Time-of-day uniform driving hemispheric sky/ground ambient lighting, adaptive distance fog, starfield noise procedural generation, and point particle attenuation.
-* **Cinematic Post-Processing Pipeline**: Sun shafts cut through valleys, glowing sunlight, and balanced colors create a filmic aesthetic.
-  * *Technical*: Radial blur volumetric God Rays, ACES filmic tone mapping, Gaussian bloom extraction, and dynamic vignette post-processing quad pass.
-* **Animated Foliage and Grass Systems**: Dense carpets of grass sway in the wind, and leaf canopies glow translucent when backlit by the sun.
-  * *Technical*: 3-plane star tuft grass geometry with scrolling 2D wind vector vertex displacement and foliage subsurface backlight scattering (SSS).
-* **Thermal Terrain Erosion**: Mountain cliffs and steep peaks naturally wear down into smooth slopes over time.
-  * *Technical*: Iterative heightmap thermal collapse algorithm smoothing talus slope gradients.
+* **Continental Geographic Terrain Noise**: Generates infinite, diverse landscapes featuring lush rolling plains, carved river canyons, crater puddles, and alpine mountain chains by blending multi-octave Fractal Brownian Motion (fBm) noise functions.
+* **Real-Time Directional Shadow Mapping**: Calculates dynamic sun and moon shadows cast across mountains and trees using a 1024x1024 depth framebuffer with 9-tap Gaussian Percentage-Closer Filtering (PCF) for smooth, soft shadow edges without visual acne.
+* **Dynamic 24-Hour Day/Night Cycle**: Simulates time-of-day progression with orbiting directional sun lighting, atmospheric sky color gradients, procedural night stars, a moon disk, and ambient glowing fireflies.
+* **Animated Wind Grass Blade System**: Renders dense grass carpets using 3-plane star-tuft geometry deformed in real-time by a scrolling 2D vector wind field for natural foliage sway.
+* **Real-Time Planar Water Reflections**: Simulates water surfaces using an off-screen reflection framebuffer pass with Fresnel light blending, depth color gradients, and animated wave normal distortion.
+* **Cinematic Post-Processing Pipeline**: Enhances visual fidelity through an off-screen post-processing pass combining volumetric god rays (radial sun shafts), sun flare halos, ACES filmic tone mapping, bloom, and screen vignette.
+* **Geological Rock Strata and Surface Detailing**: Applies procedural triplanar noise texturing to eliminate texture stretching on cliffs, steepness-dependent snow accumulation, crevice ambient occlusion, and Blinn-Phong rock specular glints.
+* **Custom 3D Model Parser and Particle System**: Includes a custom Wavefront OBJ file parser for low-poly tree assets and an active particle engine managing 600 distance-attenuated 3D pollen and firefly motes.
+* **Heightmap Slope Erosion**: Applies iterative heightmap erosion to smooth out artificial cliff artifacts into natural scree slopes and river basins.
 
 ---
 
@@ -27,8 +22,8 @@ A high-performance procedural terrain rendering engine built from scratch in C++
 
 * **WASD**: Movement
 * **Shift**: Sprint
-* **Mouse**: Look around
-* **T**: Toggle Day/Night Cycle
+* **Mouse**: Look
+* **T**: Toggle Day/Night Cycle Auto-Advance
 * **F11**: Toggle Fullscreen
 * **ESC**: Exit
 
@@ -36,55 +31,56 @@ A high-performance procedural terrain rendering engine built from scratch in C++
 
 ## Build Instructions
 
-*(Only tested on Arch Linux)*
+Note: Only tested on Arch Linux.
 
 ### Prerequisites
 
-* GCC or Clang supporting C++17
+* GCC / Clang with C++17 support
 * CMake 3.10+
-* GLFW3
-* OpenGL drivers
+* GLFW3 library
 
-### Build and Run
+### Building and Running
 
 ```bash
 git clone https://github.com/ayan-waqas/handwritten-terrain-engine.git
 cd handwritten-terrain-engine
+
 cmake -B build
 cmake --build build
+
 ./build/handwritten-terrain-engine
 ```
 
 ---
 
-## Project Architecture
+## Project Structure
 
 ```
 handwritten-terrain-engine/
-├── models/                   # Low-poly 3D Wavefront OBJ assets
-├── shaders/                  # GLSL shaders (OpenGL 3.3 Core)
-│   ├── basic.vert / .frag    # Terrain shading (Biomes, Rock strata, AO, PCF Shadows)
-│   ├── water.vert / .frag    # Planar water reflections, Fresnel, and depth color
-│   ├── skybox.vert / .frag   # Day/Night sky gradient, procedural stars, and moon
-│   ├── tree.vert / .frag     # OBJ trees, rocks, and foliage subsurface scattering
-│   ├── grass.vert / .frag    # Animated grass tufts and wind displacement
-│   ├── particle.vert / .frag # Firefly particle halo shader
-│   ├── shadow.vert / .frag   # Directional shadow map depth pass
-│   └── postprocess.vert / .frag # Volumetric God rays, Bloom, and ACES tone mapping
+├── models/                   # 3D OBJ Assets (Low-poly Trees)
+├── shaders/                  # GLSL Shaders (OpenGL 3.3 Core)
+│   ├── basic.vert / .frag    # Terrain Shading, Biomes & Rock Strata
+│   ├── water.vert / .frag    # Planar Water Reflections & Waves
+│   ├── skybox.vert / .frag   # Day/Night Sky Gradient, Stars & Moon
+│   ├── tree.vert / .frag     # OBJ Trees, Subsurface Scattering & Shadows
+│   ├── grass.vert / .frag    # Animated Grass Blades & Wind Ripples
+│   ├── particle.vert / .frag # Firefly & Pollen Particle Halo Shader
+│   ├── shadow.vert / .frag   # Directional Shadow Depth Pass
+│   └── postprocess.vert / .frag # God Rays, Bloom & ACES Tone Mapping
 ├── src/
-│   ├── camera/Camera.h       # First-person camera and reflection view matrix
-│   ├── math/                 # Custom Vec3 and Mat4 vector/matrix math classes
-│   ├── noise/PerlinNoise.h   # Multi-octave fBm and continentalness noise
+│   ├── camera/Camera.h       # First-Person Camera & Reflection Matrix
+│   ├── math/                 # Custom Vec3 & Mat4 Math Classes
+│   ├── noise/PerlinNoise.h   # Multi-Octave fBm & Continental Noise
 │   ├── terrain/
-│   │   ├── Heightmap.h       # Heightmap grid mesh, seamless borders, thermal erosion
-│   │   ├── ChunkManager.h    # Infinite chunk loading, distance culling, object placement
-│   │   ├── Water.h           # Water plane geometry
-│   │   ├── Skybox.h          # Skybox cube geometry
-│   │   ├── Tree.h            # Custom 3D OBJ parser and mesh
-│   │   ├── Rock.h            # Procedural low-poly rock mesh
-│   │   ├── Grass.h           # 3-plane grass blade geometry
-│   │   └── Particles.h       # Floating 3D firefly particle system
-│   ├── Engine.h / .cpp       # Main render loop, FBO pipeline, input handling
-│   └── main.cpp              # Application entry point
-└── CMakeLists.txt            # CMake build manifest
+│   │   ├── Heightmap.h       # Grid Mesh & Thermal Erosion
+│   │   ├── ChunkManager.h    # Infinite Chunk Loading & Culling
+│   │   ├── Water.h           # Water Plane Mesh
+│   │   ├── Skybox.h          # Sky Box Geometry
+│   │   ├── Tree.h            # OBJ Loader & Mesh Setup
+│   │   ├── Rock.h            # Procedural Low-Poly Rock Geometry
+│   │   ├── Grass.h           # Curved 3-Plane Grass Blade Tuft
+│   │   └── Particles.h       # Floating 3D Particle System
+│   ├── Engine.h / .cpp       # Render Loop, FBO Pipeline & Input Handling
+│   └── main.cpp              # Entry point
+└── CMakeLists.txt            # Build System Script
 ```
