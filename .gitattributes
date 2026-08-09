@@ -1,2 +1,6 @@
-# Mark vendor/external libraries so GitHub Linguist ignores them for language stats
+# Treat header files in this project as C++
+*.h linguist-language=C++
+
+# Exclude third-party external libraries from language statistics
 external/** linguist-vendored
+external/* linguist-vendored
