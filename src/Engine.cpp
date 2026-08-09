@@ -304,6 +304,8 @@ void Engine::init() {
     setupShadowFramebuffer();
     setupMinimapFramebuffer();
     setupBuffers();
+
+    audioEngine.init();
 }
 
 void Engine::setupBuffers() {
@@ -590,6 +592,7 @@ void Engine::run() {
 }
 
 void Engine::cleanup() {
+    audioEngine.cleanup();
     chunkManager.cleanup();
     water.cleanup();
     skybox.cleanup();

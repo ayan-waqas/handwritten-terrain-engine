@@ -12,7 +12,10 @@
 #include "terrain/Skybox.h"
 #include "terrain/Tree.h"
 #include "terrain/Particles.h"
+#include "terrain/Grass.h"
+#include "terrain/Rock.h"
 #include "camera/Camera.h"
+#include "audio/AudioEngine.h"
 
 class Engine {
 private:
@@ -65,6 +68,7 @@ private:
     Rock rock;
     Grass grass;
     Particles particles;
+    AudioEngine audioEngine;
     Camera camera;
 
     float deltaTime;

@@ -1,20 +1,20 @@
 # Handwritten Procedural Terrain Engine
 
-A C++17 and OpenGL 3.3 Core procedural terrain engine built from scratch using C++, OpenGL, GLFW, and GLAD without third-party graphics frameworks.
+A 3D procedural terrain engine built from scratch using C++17, OpenGL 3.3 Core, GLFW, and GLAD without using any external game engines or heavy frameworks.
 
 ---
 
-## Key Highlights
+## Highlights
 
-* **Continental Geographic Terrain Noise**: Generates infinite, diverse landscapes featuring lush rolling plains, carved river canyons, crater puddles, and alpine mountain chains by blending multi-octave Fractal Brownian Motion (fBm) noise functions.
-* **Real-Time Directional Shadow Mapping**: Calculates dynamic sun and moon shadows cast across mountains and trees using a 1024x1024 depth framebuffer with 9-tap Gaussian Percentage-Closer Filtering (PCF) for smooth, soft shadow edges without visual acne.
-* **Dynamic 24-Hour Day/Night Cycle**: Simulates time-of-day progression with orbiting directional sun lighting, atmospheric sky color gradients, procedural night stars, a moon disk, and ambient glowing fireflies.
-* **Animated Wind Grass Blade System**: Renders dense grass carpets using 3-plane star-tuft geometry deformed in real-time by a scrolling 2D vector wind field for natural foliage sway.
-* **Real-Time Planar Water Reflections**: Simulates water surfaces using an off-screen reflection framebuffer pass with Fresnel light blending, depth color gradients, and animated wave normal distortion.
-* **Cinematic Post-Processing Pipeline**: Enhances visual fidelity through an off-screen post-processing pass combining volumetric god rays (radial sun shafts), sun flare halos, ACES filmic tone mapping, bloom, and screen vignette.
-* **Geological Rock Strata and Surface Detailing**: Applies procedural triplanar noise texturing to eliminate texture stretching on cliffs, steepness-dependent snow accumulation, crevice ambient occlusion, and Blinn-Phong rock specular glints.
-* **Custom 3D Model Parser and Particle System**: Includes a custom Wavefront OBJ file parser for low-poly tree assets and an active particle engine managing 600 distance-attenuated 3D pollen and firefly motes.
-* **Heightmap Slope Erosion**: Applies iterative heightmap erosion to smooth out artificial cliff artifacts into natural scree slopes and river basins.
+* **Procedural Land Generation**: Generates infinite landscapes with rolling plains, river canyons, and mountain ranges on the fly by combining multi-layered Perlin noise (fBm) with seamless chunk heightmap stitching.
+* **Real-Time Dynamic Shadows**: Renders crisp sun and moon shadows across mountains and trees using an off-screen depth shadow map framebuffer paired with Percentage-Closer Filtering (PCF) for soft edges.
+* **24-Hour Day & Night Cycle**: Smoothly transitions sky colors, lighting, and celestial bodies based on sun angle calculations, complete with procedural night stars, a moon disc, and glowing fireflies.
+* **Wind-Animated Grass**: Renders dense 3D grass fields that sway naturally in real-time by feeding a scrolling 2D noise wind field straight into vertex shader displacement logic.
+* **Water Reflections & Waves**: Renders realistic water with dynamic wave motion and planar reflections created using an inverted-camera render pass blended with Schlick's Fresnel model.
+* **Post-Processing Effects**: Enhances visual fidelity using custom screen-space post-processing shaders for volumetric god rays, bloom, subtle vignette, and ACES filmic color grading.
+* **Mountain Detail & Rock Strata**: Keeps steep mountain cliffs sharp and un-stretched using triplanar normal texture mapping, combined with slope-based snow cover on high peaks.
+* **Custom 3D Model Loader & Particles**: Features a custom Wavefront OBJ parser that feeds low-poly tree geometry directly into OpenGL vertex buffers alongside a 3D particle system for ambient pollen and fireflies.
+* **Background Audio**: Keeps atmospheric background music looping seamlessly in the background using an embedded, lightweight miniaudio C engine.
 
 ---
 
@@ -22,8 +22,7 @@ A C++17 and OpenGL 3.3 Core procedural terrain engine built from scratch using C
 
 * **WASD**: Movement
 * **Shift**: Sprint
-* **Mouse**: Look
-* **T**: Toggle Day/Night Cycle Auto-Advance
+* **T**: Toggle Day/Night Cycle
 * **F11**: Toggle Fullscreen
 * **ESC**: Exit
 
@@ -31,13 +30,13 @@ A C++17 and OpenGL 3.3 Core procedural terrain engine built from scratch using C
 
 ## Build Instructions
 
-Note: Only tested on Arch Linux.
+Tested only on Arch Linux(btw)
 
 ### Prerequisites
 
-* GCC / Clang with C++17 support
-* CMake 3.10+
-* GLFW3 library
+* GCC / Clang compiler with C++17 support
+* CMake 3.20+
+* GLFW3
 
 ### Building and Running
 
@@ -57,30 +56,14 @@ cmake --build build
 
 ```
 handwritten-terrain-engine/
-├── models/                   # 3D OBJ Assets (Low-poly Trees)
-├── shaders/                  # GLSL Shaders (OpenGL 3.3 Core)
-│   ├── basic.vert / .frag    # Terrain Shading, Biomes & Rock Strata
-│   ├── water.vert / .frag    # Planar Water Reflections & Waves
-│   ├── skybox.vert / .frag   # Day/Night Sky Gradient, Stars & Moon
-│   ├── tree.vert / .frag     # OBJ Trees, Subsurface Scattering & Shadows
-│   ├── grass.vert / .frag    # Animated Grass Blades & Wind Ripples
-│   ├── particle.vert / .frag # Firefly & Pollen Particle Halo Shader
-│   ├── shadow.vert / .frag   # Directional Shadow Depth Pass
-│   └── postprocess.vert / .frag # God Rays, Bloom & ACES Tone Mapping
-├── src/
-│   ├── camera/Camera.h       # First-Person Camera & Reflection Matrix
-│   ├── math/                 # Custom Vec3 & Mat4 Math Classes
-│   ├── noise/PerlinNoise.h   # Multi-Octave fBm & Continental Noise
-│   ├── terrain/
-│   │   ├── Heightmap.h       # Grid Mesh & Thermal Erosion
-│   │   ├── ChunkManager.h    # Infinite Chunk Loading & Culling
-│   │   ├── Water.h           # Water Plane Mesh
-│   │   ├── Skybox.h          # Sky Box Geometry
-│   │   ├── Tree.h            # OBJ Loader & Mesh Setup
-│   │   ├── Rock.h            # Procedural Low-Poly Rock Geometry
-│   │   ├── Grass.h           # Curved 3-Plane Grass Blade Tuft
-│   │   └── Particles.h       # Floating 3D Particle System
-│   ├── Engine.h / .cpp       # Render Loop, FBO Pipeline & Input Handling
-│   └── main.cpp              # Entry point
-└── CMakeLists.txt            # Build System Script
+├── audio/                    # Background Audio Files
+├── external/                 # GLAD & Miniaudio Libraries
+├── models/                   # 3D Low-Poly Tree Assets
+├── shaders/                  # OpenGL 3.3 GLSL Shaders
+└── src/                      # C++ Engine Source Code
+    ├── audio/                # Audio Engine
+    ├── camera/               # First-Person Camera
+    ├── math/                 # Vector & Matrix Math Classes
+    ├── noise/                # Procedural Noise Generators
+    └── terrain/              # Chunks, Heightmaps & Mesh Generators
 ```

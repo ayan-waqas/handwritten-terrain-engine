@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(glfw)
 add_library(glad external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
-add_executable(handwritten-terrain-engine src/main.cpp src/Engine.cpp)
+add_executable(handwritten-terrain-engine src/main.cpp src/Engine.cpp src/audio/AudioEngine.cpp)
 
 target_link_libraries(handwritten-terrain-engine PRIVATE glfw glad)
 
@@ -29,13 +29,15 @@ if(WIN32)
 elseif(APPLE)
     target_link_libraries(handwritten-terrain-engine PRIVATE "-framework OpenGL")
 else()
-    target_link_libraries(handwritten-terrain-engine PRIVATE GL)
+    target_link_libraries(handwritten-terrain-engine PRIVATE GL pthread dl)
 endif()
 
-# Automatically copy shaders and models folders to the output build directory
+# Automatically copy shaders, models, and audio folders to the output build directory
 add_custom_command(TARGET handwritten-terrain-engine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:handwritten-terrain-engine>/shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/models $<TARGET_FILE_DIR:handwritten-terrain-engine>/models
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/audio $<TARGET_FILE_DIR:handwritten-terrain-engine>/audio
 )
