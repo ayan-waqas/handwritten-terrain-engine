@@ -7,6 +7,7 @@ A 3D procedural terrain engine built from scratch using C++17, OpenGL 3.3 Core, 
 ## Highlights
 
 * **Procedural Land Generation**: Generates infinite landscapes with rolling plains, river canyons, and mountain ranges on the fly by combining multi-layered Perlin noise (fBm) with seamless chunk heightmap stitching.
+* **Hydraulic Terrain Erosion**: Simulates natural water run-off and sediment transport across heightmaps to carve realistic gullies, river channels, and weathered mountain slopes.
 * **Handwritten 3D Math Library**: Built without external math dependencies like GLM, implementing custom 3D vector, matrix, perspective, and orthographic transformation math from scratch.
 * **Real-Time Dynamic Shadows**: Renders crisp sun and moon shadows across mountains and trees using an off-screen depth shadow map framebuffer paired with Percentage-Closer Filtering (PCF) for soft edges.
 * **24-Hour Day & Night Cycle**: Smoothly transitions sky colors, lighting, and celestial bodies based on sun angle calculations, complete with procedural night stars, a moon disc, and glowing fireflies.
