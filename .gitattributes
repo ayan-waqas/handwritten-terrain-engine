@@ -1,6 +1,9 @@
-# Treat header files in this project as C++
+# Treat all C++ header files in this project as C++
 *.h linguist-language=C++
 
-# Exclude third-party external libraries from language statistics
+# Count GLSL shaders for language statistics
+shaders/*.vert linguist-language=GLSL
+shaders/*.frag linguist-language=GLSL
+
+# Vendor miniaudio & external C libraries so audio code is excluded from language stats
 external/** linguist-vendored
-external/* linguist-vendored
