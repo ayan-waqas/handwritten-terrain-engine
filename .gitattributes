@@ -1,2 +1,9 @@
-# Ignore only miniaudio library from language statistics
+# Tell GitHub that .h files in this project are C++
+*.h linguist-language=C++
+
+# Keep glad.c as C (so it shows a small natural C percentage)
+external/glad/src/glad.c linguist-language=C
+
+# Ignore miniaudio so its 90,000 lines of C don't hijack the language stats
+external/miniaudio/miniaudio.h linguist-vendored
 external/miniaudio/** linguist-vendored
