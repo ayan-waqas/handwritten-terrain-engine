@@ -32,7 +32,6 @@ public:
             heights[z * width + x] = val;
     }
 
-    // Thermal & Hydraulic erosion pass to carve natural river channels and scree slopes
     void applyErosion(int iterations = 2) {
         float talusThreshold = 0.80f;
 
@@ -94,8 +93,7 @@ public:
 
                 float wx = worldOffsetX + (float)x;
                 float wz = worldOffsetZ + (float)z;
-
-                // Compute normals directly from eroded heightmap grid so lighting catches every carved gully
+                // compute normals directly from eroded heightmap grid so lighting catches every carved gully
                 if (x == 0 || x == width - 1 || z == 0 || z == depth - 1) {
                     float hL = noiseGen.terrainHeight(wx - 1.0f, wz);
                     float hR = noiseGen.terrainHeight(wx + 1.0f, wz);
@@ -110,8 +108,6 @@ public:
                     float hU = getHeight(x, z + 1);
                     v.normal = Vec3(hL - hR, 2.0f, hD - hU).normalize();
                 }
-
-                // Biome noise scale set to 0.022 so Forest, Desert, and Tundra biomes are visible nearby
                 float biomeRaw = noiseGen.fBm(wx * 0.022f, wz * 0.022f, 3, 0.5f, 2.0f);
                 float bVal = biomeRaw * 2.5f + 0.5f;
                 if (bVal < 0.0f)
@@ -130,11 +126,9 @@ public:
                 unsigned int i1 = z * width + (x + 1);
                 unsigned int i2 = (z + 1) * width + x;
                 unsigned int i3 = (z + 1) * width + (x + 1);
-
                 indices.push_back(i0);
                 indices.push_back(i2);
                 indices.push_back(i1);
-
                 indices.push_back(i1);
                 indices.push_back(i2);
                 indices.push_back(i3);

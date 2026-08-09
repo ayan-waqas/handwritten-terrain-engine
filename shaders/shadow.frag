@@ -1,5 +1,5 @@
 #version 330 core
 
 void main() {
-    // Depth is automatically stored in FBO depth buffer
+    // depth is automatically stored in FBO depth buffer
 }

@@ -30,7 +30,7 @@ public:
         return std::sqrt(x * x + y * y + z * z);
     }
 
-    // returns unit vector (length = 1.0) pointing in same direction
+    // returns unit vector pointing in same direction
     Vec3 normalize() const {
         float len = length();
         if (len > 0.0f) {

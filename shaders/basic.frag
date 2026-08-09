@@ -5,9 +5,7 @@ in vec3 Normal;
 in float Height;
 in float Biome;
 in vec4 FragPosLightSpace;
-
 out vec4 FragColor;
-
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform vec3 viewPos;
@@ -44,7 +42,6 @@ float triplanarNoise(vec3 pos, vec3 norm) {
 float calculateShadow(vec4 fragPosLightSpace, vec3 norm, vec3 lightDirection) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
-
     if (projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0)
         return 0.0;
 
@@ -53,9 +50,8 @@ float calculateShadow(vec4 fragPosLightSpace, vec3 norm, vec3 lightDirection) {
 
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-
-    for (int x = -1; x <= 1; ++x) {
-        for (int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
             float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r;
             float weight = (x == 0 && y == 0) ? 0.25 : ((x == 0 || y == 0) ? 0.125 : 0.0625);
             shadow += (currentDepth - bias > pcfDepth) ? weight : 0.0;
@@ -71,32 +67,29 @@ void main() {
     float sunElevation = lightDirection.y;
     float dayFactor = smoothstep(-0.1, 0.2, sunElevation);
 
-    // Neutral natural ambient light (NO blue tinting!)
+    // natural ambient light
     vec3 skyAmbient   = vec3(0.58, 0.58, 0.58);
     vec3 groundAmbient = vec3(0.30, 0.28, 0.24);
     float upWeight = norm.y * 0.5 + 0.5;
     vec3 hemiAmbient = mix(groundAmbient, skyAmbient, upWeight) * 0.42 * dayFactor;
-    
     float shadow = calculateShadow(FragPosLightSpace, norm, lightDirection);
     float diff = max(dot(norm, lightDirection), 0.0);
     vec3 diffuse = (1.0 - shadow) * diff * lightColor * 1.15;
-
     float steepness = dot(norm, vec3(0.0, 1.0, 0.0));
-
     vec3 grass, rock, snow;
 
-    // Natural Earth Palettes (Zero blue tint!)
+    //  earth palettes
     vec3 forestGrass = vec3(0.12, 0.50, 0.14);
-    vec3 forestRock  = vec3(0.48, 0.44, 0.38); // Earth granite rock
-    vec3 forestSnow  = vec3(1.0, 1.0, 0.98);   // Warm pure snow
+    vec3 forestRock  = vec3(0.48, 0.44, 0.38); // earth granite rock
+    vec3 forestSnow  = vec3(1.0, 1.0, 0.98);   // warm pure snow
 
     vec3 desertGrass = vec3(0.82, 0.68, 0.28);
     vec3 desertRock  = vec3(0.65, 0.38, 0.18);
     vec3 desertSnow  = vec3(0.95, 0.90, 0.78);
 
-    vec3 tundraGrass = vec3(0.18, 0.46, 0.22); // Crisp alpine green
-    vec3 tundraRock  = vec3(0.42, 0.40, 0.38); // Dark mountain granite slate
-    vec3 tundraSnow  = vec3(1.0, 1.0, 0.98);   // Pure snow
+    vec3 tundraGrass = vec3(0.18, 0.46, 0.22); //   green
+    vec3 tundraRock  = vec3(0.42, 0.40, 0.38); //  mountain granite slate
+    vec3 tundraSnow  = vec3(1.0, 1.0, 0.98);   //  snow
 
     float b1 = smoothstep(0.3, 0.38, Biome);
     float b2 = smoothstep(0.6, 0.68, Biome);
@@ -133,12 +126,10 @@ void main() {
 
     float rim = pow(1.0 - max(dot(viewDir, norm), 0.0), 3.5) * max(dot(norm, lightDirection), 0.0);
     vec3 rimLight = vec3(1.0, 0.90, 0.70) * rim * 0.35 * dayFactor * (1.0 - shadow);
-
     vec3 litColor = (finalAmbient + diffuse) * baseColor + rimLight;
-
     vec3 halfDir = normalize(lightDirection + viewDir);
 
-    // Direct Sun Specular Highlights on Mountain Rock Ridges (Peak Lighting!)
+    // peak lightning!!!
     float rockSpecular = pow(max(dot(norm, halfDir), 0.0), 32.0) * rockFactor * 0.25 * (1.0 - shadow) * dayFactor;
     litColor += vec3(1.0, 0.95, 0.85) * rockSpecular * lightColor;
 
@@ -155,22 +146,24 @@ void main() {
     }
     litColor += vec3(1.0) * wetSpecular * lightColor * dayFactor * (1.0 - shadow);
 
-    // Atmospheric Horizon Fog (Warm Natural Haze - ZERO BLUE TINT!)
+    // horizon fog
     float distance = length(viewPos - FragPos);
     float distFog = clamp((distance - 90.0) / 320.0, 0.0, 1.0);
     float heightFog = exp(-max(FragPos.y + 8.0, 0.0) * 0.04);
     float fogFactor = clamp(distFog + heightFog * 0.12, 0.0, 1.0);
-    
     vec3 dayFog = vec3(0.72, 0.76, 0.80); // Soft warm natural atmospheric haze
     vec3 duskFog = vec3(0.68, 0.48, 0.35);
     vec3 nightFog = vec3(0.02, 0.03, 0.06);
     
     vec3 fogColor;
-    if (sunElevation > 0.2) fogColor = dayFog;
-    else if (sunElevation > 0.0) fogColor = mix(duskFog, dayFog, sunElevation / 0.2);
-    else if (sunElevation > -0.1) fogColor = mix(nightFog, duskFog, (sunElevation + 0.1) / 0.1);
-    else fogColor = nightFog;
-
+    if (sunElevation > 0.2)
+        fogColor = dayFog;
+    else if (sunElevation > 0.0)
+        fogColor = mix(duskFog, dayFog, sunElevation / 0.2);
+    else if (sunElevation > -0.1)
+        fogColor = mix(nightFog, duskFog, (sunElevation + 0.1) / 0.1);
+    else
+        fogColor = nightFog;
     vec3 finalColor = mix(litColor, fogColor, fogFactor);
     FragColor = vec4(finalColor, 1.0);
 }

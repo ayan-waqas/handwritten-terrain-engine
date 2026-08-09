@@ -30,11 +30,10 @@ private:
     }
 
 public:
-    // constructor sets up shuffled permutation table
+    //sets up shuffled permutation table
     PerlinNoise(unsigned int seed = 2026) {
         p.resize(256);
         std::iota(p.begin(), p.end(), 0);
-
         std::default_random_engine engine(seed);
         std::shuffle(p.begin(), p.end(), engine);
 
@@ -100,36 +99,36 @@ public:
         return total / maxValue;
     }
 
-    // Geographic landforms: Continental noise partitions world into Plains, Canyons, and Alpine Ranges
+    // geographic landforms
     float terrainHeight(float wx, float wz) const {
         float cx = wx * 0.005f;
         float cz = wz * 0.005f;
 
-        // Continentalness noise (-1.0 to 1.0)
+        // continentalness noise (-1.0 to 1.0)
         float continental = fBm(cx, cz, 3, 0.5f, 2.0f);
 
-        // Domain warping for natural mountain ridges
+        // domain warping for natural mountain ridges
         float sx = wx * 0.035f;
         float sz = wz * 0.035f;
         float warpX = fBm(sx * 0.4f, sz * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
         float warpZ = fBm((sx + 4.2f) * 0.4f, (sz + 2.8f) * 0.4f, 2, 0.5f, 2.0f) * 0.6f;
 
-        // 1. Lush Rolling Plains / Meadows with Crater Puddles
+        // meadows with Crater Puddles
         float plainsNoise = fBm(wx * 0.012f, wz * 0.012f, 4, 0.5f, 2.0f);
         float puddleNoise = fBm(wx * 0.045f, wz * 0.045f, 2, 0.5f, 2.0f);
         float craterCarve = (puddleNoise < -0.35f) ? (puddleNoise + 0.35f) * 4.5f : 0.0f;
         float plainsHeight = (plainsNoise * 0.5f + 0.5f) * 6.0f - 1.5f + craterCarve;
 
-        // 2. Carved River Canyons / Terraced Plateaus (mid continentalness)
+        // carved river canyons
         float canyonNoise = fBm(wx * 0.025f, wz * 0.025f, 4, 0.5f, 2.0f);
         float canyonStep = std::floor(canyonNoise * 4.0f) * 2.5f;
         float canyonHeight = canyonStep + canyonNoise * 2.0f + 1.0f;
 
-        // 3. Alpine Mountain Ranges (high continentalness)
+        // mountain Ranges (high continentalness)
         float ridge = ridgedfBm(sx + warpX, sz + warpZ, 5, 0.48f, 2.0f);
         float mountainHeight = (ridge - 0.20f) * 26.0f;
 
-        // Blend between Plains (cont < -0.05), Canyons (-0.05 to 0.20), and Alpine Peaks (cont >= 0.20)
+        // blend between plains (cont < -0.05), canyons (-0.05 to 0.20), and alpine peaks (cont >= 0.20)
         if (continental < -0.05f) {
             float t = std::clamp((continental + 0.5f) / 0.45f, 0.0f, 1.0f);
             return lerp(t, plainsHeight, plainsHeight * 0.7f + canyonHeight * 0.3f);

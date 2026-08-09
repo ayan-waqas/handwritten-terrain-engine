@@ -29,11 +29,10 @@ public:
         Vec3 midColor  = Vec3(0.14f, 0.46f, 0.16f);
         Vec3 tipColor  = Vec3(0.22f, 0.58f, 0.20f);
 
-        float w = 0.20f;   // blade width
-        float h = 0.24f;   // small natural grass blade height (24cm)
+        float w = 0.20f;
+        float h = 0.24f;
         float pi = 3.14159265f;
 
-        // 3 rotated curved blade planes (star tuft with forward bend)
         for (int p = 0; p < 3; ++p) {
             float angle = (float)p * (pi / 3.0f);
             float cosA = std::cos(angle);
@@ -57,15 +56,12 @@ public:
             vertices.push_back({ p2, midColor,  0.5f });
             vertices.push_back({ p3, midColor,  0.5f });
             vertices.push_back({ p4, tipColor,  1.0f });
-
             indices.push_back(baseIdx + 0);
             indices.push_back(baseIdx + 1);
             indices.push_back(baseIdx + 3);
-
             indices.push_back(baseIdx + 3);
             indices.push_back(baseIdx + 2);
             indices.push_back(baseIdx + 0);
-
             indices.push_back(baseIdx + 2);
             indices.push_back(baseIdx + 3);
             indices.push_back(baseIdx + 4);
@@ -80,19 +76,14 @@ public:
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GrassVertex), vertices.data(), GL_STATIC_DRAW);
-
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GrassVertex), (void*)0);
         glEnableVertexAttribArray(0);
-
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GrassVertex), (void*)(sizeof(Vec3)));
         glEnableVertexAttribArray(1);
-
         glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(GrassVertex), (void*)(sizeof(Vec3) * 2));
         glEnableVertexAttribArray(2);
-
         glBindVertexArray(0);
     }
 

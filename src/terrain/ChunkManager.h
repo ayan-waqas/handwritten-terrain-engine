@@ -60,7 +60,7 @@ public:
                             float heightVal = noiseGen.terrainHeight(wx, wz);
                             newChunk.heightmap.heights[z * newChunk.heightmap.width + x] = heightVal;
 
-                            // Trees: Lighter, natural forest groves
+                            // trees
                             float forestNoise = noiseGen.fBm(wx * 0.05f, wz * 0.05f, 2, 0.5f, 2.0f);
                             if (forestNoise > 0.32f && heightVal > 1.0f && heightVal < 9.0f) {
                                 int hash = (int)(wx * 41.0f + wz * 83.0f);
@@ -71,11 +71,11 @@ public:
                                 }
                             }
 
-                            // Rocks: Spawn on higher dry slopes
+                            // rocks
                             if (x % 12 == 7 && z % 12 == 2 && heightVal > 5.0f && heightVal < 16.0f)
                                 newChunk.rockPositions.push_back(Vec3(wx, heightVal, wz));
 
-                            // Grass: Spawn ONLY on dry meadow land (above water level -1.0f)
+                            // grass
                             if (heightVal > -1.0f && heightVal < 9.0f) {
                                 for (int subZ = 0; subZ < 2; ++subZ) {
                                     for (int subX = 0; subX < 2; ++subX) {

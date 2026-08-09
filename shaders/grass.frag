@@ -17,17 +17,14 @@ void main() {
 
     vec3 ambient = 0.45 * vec3(0.85, 0.92, 1.0) * dayFactor;
     ambient += (1.0 - dayFactor) * vec3(0.02, 0.04, 0.1);
-    
     float diff = max(dot(vec3(0.0, 1.0, 0.0), lightDirection), 0.0) * 0.6 + 0.4;
     vec3 diffuse = diff * lightColor * dayFactor;
 
-    // Subsurface Backlight Transmission
     float backlight = max(dot(-viewDir, lightDirection), 0.0);
     float sss = pow(backlight, 3.0) * 0.45 * dayFactor;
     vec3 sssColor = vec3(0.4, 0.85, 0.25) * sss * lightColor;
 
     vec3 litColor = (ambient + diffuse) * vertColor + sssColor;
-
     float distance = length(viewPos - WorldPos);
     float distFog = clamp((distance - 60.0) / 240.0, 0.0, 1.0);
     float heightFog = exp(-max(WorldPos.y + 8.0, 0.0) * 0.04);

@@ -51,11 +51,11 @@ private:
     const unsigned int SHADOW_HEIGHT = 1024;
     
     // Day/night cycle
-    float timeOfDay;       // 0.0 to 24.0
+    float timeOfDay;
     bool dayNightAutoAdvance;
     bool tPressedLastFrame;
 
-    // Minimap FBO
+    // minimap FBO
     GLuint minimapFramebuffer;
     GLuint minimapColorTexture;
     GLuint minimapDepthBuffer;

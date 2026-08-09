@@ -13,14 +13,12 @@ public:
     Vec3 up;
     Vec3 right;
     Vec3 worldUp;
-
     float yaw;
     float pitch;
     float speed;
     float sensitivity;
 
-    Camera(Vec3 startPos = Vec3(0.0f, 30.0f, 60.0f), Vec3 startUp = Vec3(0.0f, 1.0f, 0.0f), float startYaw = -90.0f, float startPitch = -20.0f)
-        : position(startPos), worldUp(startUp), yaw(startYaw), pitch(startPitch), speed(20.0f), sensitivity(0.1f) {
+    Camera(Vec3 startPos = Vec3(0.0f, 30.0f, 60.0f), Vec3 startUp = Vec3(0.0f, 1.0f, 0.0f), float startYaw = -90.0f, float startPitch = -20.0f): position(startPos), worldUp(startUp), yaw(startYaw), pitch(startPitch), speed(20.0f), sensitivity(0.1f) {
         updateCameraVectors();
     }
 
@@ -59,7 +57,6 @@ public:
             pitch = 89.0f;
         if (pitch < -89.0f)
             pitch = -89.0f;
-
         updateCameraVectors();
     }
 
@@ -73,7 +70,6 @@ private:
         newFront.y = std::sin(radPitch);
         newFront.z = std::sin(radYaw) * std::cos(radPitch);
         front = newFront.normalize();
-
         right = Vec3::cross(front, worldUp).normalize();
         up = Vec3::cross(right, front).normalize();
     }

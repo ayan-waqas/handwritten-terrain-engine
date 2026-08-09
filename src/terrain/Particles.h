@@ -43,23 +43,17 @@ public:
 
         glGenVertexArrays(1, &vao);
         glGenBuffers(1, &vbo);
-
         glBindVertexArray(vao);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(ParticleVertex), vertices.data(), GL_STATIC_DRAW);
-
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)0);
         glEnableVertexAttribArray(0);
-
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)(sizeof(Vec3)));
         glEnableVertexAttribArray(1);
-
         glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)(sizeof(Vec3) * 2));
         glEnableVertexAttribArray(2);
-
         glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(ParticleVertex), (void*)(sizeof(Vec3) * 2 + sizeof(float)));
         glEnableVertexAttribArray(3);
-
         glBindVertexArray(0);
     }
 

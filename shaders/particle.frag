@@ -24,7 +24,6 @@ void main() {
 
     vec3 nightColor = vec3(1.0, 0.7, 0.1) * 3.0;
     vec3 dayColor = vec3(1.0, 1.0, 1.0) * 0.8;
-
     vec3 color = mix(dayColor, nightColor, nightFactor) * particleColor;
     alpha *= mix(0.5, 1.5, nightFactor);
 

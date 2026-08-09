@@ -63,7 +63,6 @@ public:
         }
     }
 
-    // cleans up gpu buffers
     void cleanup() {
         if (vao != 0)
             glDeleteVertexArrays(1, &vao);

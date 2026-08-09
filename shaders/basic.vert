@@ -17,7 +17,6 @@ out vec4 FragPosLightSpace;
 
 void main() {
     vec3 pos = aPos;
-
     if (aPos.y < 2.0) {
         float wind = sin(aPos.x * 0.5 + time * 2.0) * cos(aPos.z * 0.5 + time * 1.5) * 0.15;
         pos.x += wind;
@@ -29,6 +28,5 @@ void main() {
     Height = aPos.y;
     Biome = aBiome;
     FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
-
     gl_Position = transform * vec4(pos, 1.0);
 }

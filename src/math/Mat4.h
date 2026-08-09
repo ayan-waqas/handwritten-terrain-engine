@@ -9,7 +9,7 @@ public:
     float m[16];
 
     Mat4() {
-        for (int i = 0; i < 16; ++i)
+        for (int i = 0; i < 16; i++)
             m[i] = 0.0f;
         m[0] = 1.0f;
         m[5] = 1.0f;

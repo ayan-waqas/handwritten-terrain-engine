@@ -24,10 +24,8 @@ public:
     void setup() {
         std::vector<TreeVertex> vertices;
         std::vector<unsigned int> indices;
-
         std::vector<OBJLoader::OBJVertex> objVerts;
         std::vector<unsigned int> objIndices;
-
         bool loaded = OBJLoader::load("models/tree/Lowpoly_tree_sample.obj", objVerts, objIndices);
         if (!loaded)
             loaded = OBJLoader::load("../models/tree/Lowpoly_tree_sample.obj", objVerts, objIndices);
