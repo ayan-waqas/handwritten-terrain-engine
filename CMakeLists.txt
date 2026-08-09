@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(handwritten-terrain-engine)
+project(terrain-engine)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -14,30 +14,31 @@ FetchContent_Declare(
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(glfw)
 
 # GLAD (manually placed, compiled as part of our sources)
 add_library(glad external/glad/src/glad.c)
 target_include_directories(glad PUBLIC external/glad/include)
 
-add_executable(handwritten-terrain-engine src/main.cpp src/Engine.cpp src/audio/AudioEngine.cpp)
+add_executable(terrain-engine src/main.cpp src/Engine.cpp src/audio/AudioEngine.cpp)
 
-target_link_libraries(handwritten-terrain-engine PRIVATE glfw glad)
+target_link_libraries(terrain-engine PRIVATE glfw glad)
 
 if(WIN32)
-    target_link_libraries(handwritten-terrain-engine PRIVATE opengl32)
+    target_link_libraries(terrain-engine PRIVATE opengl32)
 elseif(APPLE)
-    target_link_libraries(handwritten-terrain-engine PRIVATE "-framework OpenGL")
+    target_link_libraries(terrain-engine PRIVATE "-framework OpenGL")
 else()
-    target_link_libraries(handwritten-terrain-engine PRIVATE GL pthread dl)
+    target_link_libraries(terrain-engine PRIVATE GL pthread dl)
 endif()
 
 # Automatically copy shaders, models, and audio folders to the output build directory
-add_custom_command(TARGET handwritten-terrain-engine POST_BUILD
+add_custom_command(TARGET terrain-engine POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:handwritten-terrain-engine>/shaders
+    ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:terrain-engine>/shaders
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/models $<TARGET_FILE_DIR:handwritten-terrain-engine>/models
+    ${CMAKE_SOURCE_DIR}/models $<TARGET_FILE_DIR:terrain-engine>/models
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/audio $<TARGET_FILE_DIR:handwritten-terrain-engine>/audio
+    ${CMAKE_SOURCE_DIR}/audio $<TARGET_FILE_DIR:terrain-engine>/audio
 )

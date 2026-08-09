@@ -1,12 +1,13 @@
-# Handwritten Procedural Terrain Engine
+# Procedural Terrain Engine
 
-A 3D procedural terrain engine built from scratch using C++17, OpenGL 3.3 Core, GLFW, and GLAD without using any external game engines or heavy frameworks.
+A 3D procedural terrain engine built from scratch using C++17, OpenGL 3.3 Core, GLFW, and GLAD without using external math libraries (like GLM), game engines, or heavy frameworks.
 
 ---
 
 ## Highlights
 
 * **Procedural Land Generation**: Generates infinite landscapes with rolling plains, river canyons, and mountain ranges on the fly by combining multi-layered Perlin noise (fBm) with seamless chunk heightmap stitching.
+* **Handwritten 3D Math Library**: Built without external math dependencies like GLM, implementing custom 3D vector, matrix, perspective, and orthographic transformation math from scratch.
 * **Real-Time Dynamic Shadows**: Renders crisp sun and moon shadows across mountains and trees using an off-screen depth shadow map framebuffer paired with Percentage-Closer Filtering (PCF) for soft edges.
 * **24-Hour Day & Night Cycle**: Smoothly transitions sky colors, lighting, and celestial bodies based on sun angle calculations, complete with procedural night stars, a moon disc, and glowing fireflies.
 * **Wind-Animated Grass**: Renders dense 3D grass fields that sway naturally in real-time by feeding a scrolling 2D noise wind field straight into vertex shader displacement logic.
@@ -41,13 +42,13 @@ Tested only on Arch Linux(btw)
 ### Building and Running
 
 ```bash
-git clone https://github.com/ayan-waqas/handwritten-terrain-engine.git
-cd handwritten-terrain-engine
+git clone https://github.com/ayan-waqas/terrain-engine.git
+cd terrain-engine
 
 cmake -B build
 cmake --build build
 
-./build/handwritten-terrain-engine
+./build/terrain-engine
 ```
 
 ---
@@ -55,7 +56,7 @@ cmake --build build
 ## Project Structure
 
 ```
-handwritten-terrain-engine/
+terrain-engine/
 ├── audio/                    # Background Audio Files
 ├── external/                 # GLAD & Miniaudio Libraries
 ├── models/                   # 3D Low-Poly Tree Assets

@@ -1,0 +1,2 @@
+# Mark vendor/external libraries so GitHub Linguist ignores them for language stats
+external/** linguist-vendored
